@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-// Every ponytail command the pi extension registers must also ship as a
-// file-based command for the hosts that need one: Claude Code (commands/*.toml,
-// which Gemini CLI reuses) and OpenCode (.opencode/command/*.md). /ponytail-help
+// Every ponytail skill must also ship as a file-based command for the hosts
+// that need one: Gemini CLI (commands/*.toml) and OpenCode
+// (.opencode/command/*.md). /ponytail-help
 // was advertised in the README and the help card but missing both files; this
 // guards that drift -- a registered command with no adapter file fails here.
 
@@ -13,12 +13,13 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 
-// pi-extension registers the canonical command set.
-const piSource = fs.readFileSync(path.join(root, 'pi-extension', 'index.js'), 'utf8');
-const commands = [...piSource.matchAll(/registerCommand\(["']([\w-]+)["']/g)].map((m) => m[1]);
+// The skill folders are the canonical command set.
+const commands = fs.readdirSync(path.join(root, 'skills'), { withFileTypes: true })
+  .filter((entry) => entry.isDirectory())
+  .map((entry) => entry.name);
 
-test('pi registers at least the base command', () => {
-  assert.ok(commands.includes('ponytail'), 'expected pi to register a ponytail command');
+test('the skills include at least the base command', () => {
+  assert.ok(commands.includes('ponytail'), 'expected a skills/ponytail folder');
 });
 
 test('every registered command ships a Claude commands/*.toml', () => {
@@ -45,7 +46,6 @@ test('every registered command ships an OpenCode .opencode/command/*.md', () => 
 // rather than restating it here: a copied regex only tests the copy.
 const debtCopies = [
   'skills/ponytail-debt/SKILL.md',
-  '.openclaw/skills/ponytail-debt/SKILL.md',
   'commands/ponytail-debt.toml',
   '.opencode/command/ponytail-debt.md',
 ];
