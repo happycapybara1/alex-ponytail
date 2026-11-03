@@ -122,7 +122,7 @@ The ladder runs *after* it understands the problem, not instead of it: it reads 
 
 Lazy, not negligent: trust-boundary validation, data-loss handling, security, and accessibility are never on the chopping block.
 
-Logic with a branch, a loop, a parser, money or security leaves one small test behind. Every reply ends with what was skipped or not checked and any risk you should know.
+Logic with a branch, a loop, a parser, money or security leaves one small test behind, unless a test-first workflow such as superpowers' TDD is in use, which then wins. Skipped work and risks get one line when there are any. When superpowers or i-have-adhd give a different instruction, ponytail follows them.
 
 ## The prompt
 
