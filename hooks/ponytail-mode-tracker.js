@@ -1,21 +1,10 @@
 #!/usr/bin/env node
 // ponytail — UserPromptSubmit hook to track which ponytail mode is active
-// Inspects user input for /ponytail commands and writes mode to flag file
+// Inspects user input for /ponytail commands and "stop ponytail" and writes the
+// mode to the flag file
 
 const { getDefaultMode, isDeactivationCommand, writeDefaultMode } = require('./ponytail-config');
-const {
-  clearMode,
-  cursorRuleNotice,
-  cursorRulePath,
-  isCodeBuddy,
-  isCodex,
-  isCopilot,
-  isCursor,
-  isQoder,
-  readMode,
-  setMode,
-  writeHookOutput,
-} = require('./ponytail-runtime');
+const { isCodex, readMode, setMode, writeHookOutput } = require('./ponytail-runtime');
 const { getPonytailInstructions } = require('./ponytail-instructions');
 
 let input = '';
@@ -29,22 +18,7 @@ function finish() {
     const data = JSON.parse(input.replace(/^\uFEFF/, ''));
     const prompt = (data.prompt || '').trim().toLowerCase();
 
-    // Cursor with the always-on rule in the workspace: no hook can change or
-    // switch off a rule, so answer the command with the notice instead of
-    // writing a mode the rule would contradict (#817). Ordinary prompts
-    // stay silent as usual.
-    if (isCursor && (/^[/@$]ponytail/.test(prompt) || isDeactivationCommand(prompt))) {
-      const rule = cursorRulePath();
-      if (rule) {
-        writeHookOutput('UserPromptSubmit', readMode() || 'off', cursorRuleNotice(rule));
-        return;
-      }
-    }
-
     // Match /ponytail commands
-    let modeSwitched = false;
-    let deactivated = false;
-    let defaultNotice = '';
     if (/^[/@$]ponytail/.test(prompt)) {
       const parts = prompt.split(/\s+/);
       const cmd = parts[0].replace(/^[@$]/, '/');
@@ -54,8 +28,6 @@ function finish() {
       let isReportOnly = false;
 
       // /ponytail-review is a one-shot skill, not a session level (#736).
-      // Matching it here used to setMode('review'), which latched
-      // INDEPENDENT_MODES for the rest of the session.
       if (cmd === '/ponytail' || cmd === '/ponytail:ponytail') {
         // `/ponytail default <mode>` persists the default to config (survives
         // restarts). Plain switches stay session-scoped ("sticks until session
@@ -65,12 +37,9 @@ function finish() {
           const dmode = parts[2];
           if (dmode === 'off' || dmode === 'lite' || dmode === 'full' || dmode === 'ultra') {
             writeDefaultMode(dmode);
-            defaultNotice = 'PONYTAIL DEFAULT SET — new sessions start in ' + dmode + '.';
-            if (!isQoder) writeHookOutput('UserPromptSubmit', dmode, defaultNotice);
+            writeHookOutput('UserPromptSubmit', dmode, 'PONYTAIL DEFAULT SET — new sessions start in ' + dmode + '.');
           }
-          // Qoder still needs this turn's ruleset: the block below folds the
-          // notice into it. mode stays null, so the session level is untouched.
-          if (!isQoder) return; // don't fall through to the session-mode switch
+          return; // don't fall through to the session-mode switch
         }
         if (arg === 'lite') mode = 'lite';
         else if (arg === 'full') mode = 'full';
@@ -90,75 +59,25 @@ function finish() {
       }
 
       if (isReportOnly) {
-        // On Qoder the ruleset block below already reports; a second write
-        // here would put two JSON objects on stdout.
-        if (!isQoder) {
-          writeHookOutput(
-            'UserPromptSubmit',
-            mode,
-            'PONYTAIL MODE ACTIVE — level: ' + mode,
-          );
-        }
+        writeHookOutput('UserPromptSubmit', mode, 'PONYTAIL MODE ACTIVE — level: ' + mode);
       } else if (mode && mode !== 'off') {
         setMode(mode);
-        modeSwitched = true;
-        // ponytail: Qoder needs the full ruleset every turn, so when a mode
-        // switch happens we fold the confirmation into the ruleset output
-        // below (one JSON on stdout) instead of emitting two separate writes.
-        if (!isQoder) {
-          // Cursor (#817) and Codex have no /ponytail command that would load
-          // the skill body for the new level, and the SessionStart ruleset is
-          // filtered to the start level, so the tracker delivers that level's
-          // ruleset along with the confirmation.
-          const header = 'PONYTAIL MODE CHANGED — level: ' + mode;
-          writeHookOutput(
-            'UserPromptSubmit',
-            mode,
-            (isCodex || isCursor) ? header + '\n\n' + getPonytailInstructions(mode) : header,
-          );
-        }
+        // Codex has no /ponytail command that would load the skill body for the
+        // new level, and the SessionStart ruleset is filtered to the start level,
+        // so the tracker delivers that level's ruleset along with the confirmation.
+        const header = 'PONYTAIL MODE CHANGED — level: ' + mode;
+        writeHookOutput(
+          'UserPromptSubmit',
+          mode,
+          isCodex ? header + '\n\n' + getPonytailInstructions(mode) : header,
+        );
       } else if (mode === 'off') {
-        if (isQoder) setMode('off');
-        else clearMode();
-
-        deactivated = true;
+        setMode('off');
         writeHookOutput('UserPromptSubmit', 'off', 'PONYTAIL MODE OFF');
       }
-    }
-
-    // Detect deactivation
-    if (!modeSwitched && !deactivated && isDeactivationCommand(prompt)) {
-      if (isQoder) setMode('off');
-      else clearMode();
-
-      deactivated = true;
+    } else if (isDeactivationCommand(prompt)) {
+      setMode('off');
       writeHookOutput('UserPromptSubmit', 'off', 'PONYTAIL MODE OFF');
-    }
-
-    // Qoder has no SessionStart event, so UserPromptSubmit does double duty:
-    // activate the default mode on first prompt (if no flag exists yet), then
-    // inject the ruleset on every prompt. Claude Code/Codex do this in
-    // SessionStart via ponytail-activate.js; Qoder can't, so we do it here.
-    // Skip when deactivated — user just turned ponytail off.
-    if (isQoder && !deactivated) {
-      let currentMode = readMode();
-      if (!currentMode) {
-        // First prompt in session — initialize from config/env default
-        currentMode = getDefaultMode();
-        if (currentMode !== 'off') {
-          try { setMode(currentMode); } catch (e) {}
-        }
-      }
-      if (currentMode && currentMode !== 'off') {
-        // ponytail: one JSON per invocation — mode-switch confirmation is
-        // folded into the ruleset header so Qoder gets both in one write.
-        const header = (defaultNotice ? defaultNotice + '\n\n' : '') + (modeSwitched
-          ? 'PONYTAIL MODE CHANGED — level: ' + currentMode + '\n\n'
-          : '');
-        writeHookOutput('UserPromptSubmit', currentMode, header + getPonytailInstructions(currentMode));
-      } else if (defaultNotice) {
-        writeHookOutput('UserPromptSubmit', currentMode, defaultNotice);
-      }
     }
   } catch (e) {
     // Silent fail

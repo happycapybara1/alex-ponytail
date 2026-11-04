@@ -1,14 +1,13 @@
 #!/usr/bin/env node
-// Version-consistency guard. Ponytail declares its version in seven files across
-// five host ecosystems, and every release bumps all of them by hand.
+// Version-consistency guard. The version is declared in the five files listed
+// in VERSION_FILES: the Claude Code, Codex, Copilot and Gemini CLI manifests and
+// package.json (OpenCode). Every release bumps all of them by hand.
 //
-// tests/gemini-extension.test.js already checks the four plugin manifests agree
-// with each other, but that can't catch the failure mode that shipped in v4.8.0:
-// every manifest stayed stale at 4.7.0 *together* while the release moved on, so
-// they "agreed" and the test passed (#260, #262). It also ignores the two
-// package.json files. This check closes both gaps:
-//   1. every version-bearing file must share one pinned X.Y.Z version, and
-//   2. on a release-tag CI run, that shared version must equal the tag.
+// tests/gemini-extension.test.js checks that the four manifests agree with each
+// other, but not package.json, and agreement alone can't catch them all going
+// stale together while the release moves on (#260, #262). This script checks:
+//   1. every file in VERSION_FILES declares the same pinned X.Y.Z version, and
+//   2. when run for a tag (GITHUB_REF_TYPE=tag), that version equals the tag.
 
 const fs = require('fs');
 const path = require('path');
