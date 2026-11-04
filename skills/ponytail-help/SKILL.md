@@ -38,4 +38,4 @@ In Codex, use `$alex-ponytail:ponytail`, `$alex-ponytail:ponytail-review` and so
 
 Claude Code: `/plugin marketplace update alex-ponytail`, then `/reload-plugins`. To update automatically, open `/plugin`, go to Marketplaces, pick alex-ponytail and enable auto-update. Other tools: see INSTALL.md.
 
-Docs: https://github.com/happycapybara1/alex-ponytail
+Docs: https://github.com/happycapybara1/ponytail-alex

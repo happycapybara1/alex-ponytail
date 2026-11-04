@@ -7,7 +7,7 @@ The Claude Code and Codex plugins run small Node.js lifecycle hooks, so `node` n
 ## Claude Code
 
 ```
-/plugin marketplace add happycapybara1/alex-ponytail
+/plugin marketplace add happycapybara1/ponytail-alex
 ```
 ```
 /plugin install alex-ponytail@alex-ponytail
@@ -20,7 +20,7 @@ Same steps in the Claude Code Desktop app's Code tab: type the two `/plugin` com
 ## Codex
 
 ```bash
-codex plugin marketplace add happycapybara1/alex-ponytail
+codex plugin marketplace add happycapybara1/ponytail-alex
 codex plugin add alex-ponytail@alex-ponytail
 ```
 
@@ -31,14 +31,14 @@ This same install also covers the Codex desktop app: restart the app after insta
 ## GitHub Copilot CLI
 
 ```bash
-copilot plugin marketplace add happycapybara1/alex-ponytail
+copilot plugin marketplace add happycapybara1/ponytail-alex
 copilot plugin install alex-ponytail@alex-ponytail
 ```
 
 In an interactive Copilot CLI session, use the slash equivalents:
 
 ```
-/plugin marketplace add happycapybara1/alex-ponytail
+/plugin marketplace add happycapybara1/ponytail-alex
 /plugin install alex-ponytail@alex-ponytail
 ```
 
@@ -58,7 +58,7 @@ Copy [`.github/copilot-instructions.md`](.github/copilot-instructions.md) into y
 Run the plugin from a checkout of this fork:
 
 ```bash
-git clone https://github.com/happycapybara1/alex-ponytail ~/ponytail
+git clone https://github.com/happycapybara1/ponytail-alex ~/ponytail
 ```
 
 Then add the checkout's plugin directory to your project's `opencode.json` (use the absolute path to share one checkout across projects):
@@ -74,7 +74,7 @@ Update with `git -C ~/ponytail pull`.
 ## Gemini CLI
 
 ```bash
-gemini extensions install https://github.com/happycapybara1/alex-ponytail
+gemini extensions install https://github.com/happycapybara1/ponytail-alex
 ```
 
 Loads the ruleset as always-on context every session and registers the `/ponytail` commands; the `skills/` ship too, activated when a task needs them.
@@ -103,7 +103,7 @@ While active, the ruleset is also injected into every subagent spawned via the A
 These remove the plugin's own files. Ponytail also keeps a little state outside the plugin folder: its mode flags (such as `~/.claude/.ponytail-active`) and, if you made one, `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). To remove those too, run the uninstall script from a fresh checkout, before or after the commands above:
 
 ```bash
-git clone --depth 1 https://github.com/happycapybara1/alex-ponytail ponytail-uninstall
+git clone --depth 1 https://github.com/happycapybara1/ponytail-alex ponytail-uninstall
 node ponytail-uninstall/scripts/uninstall.js
 ```
 
