@@ -1,13 +1,14 @@
 // ponytail — OpenCode plugin.
 //
 // Injects the ponytail ruleset into every chat's system prompt at the active
-// intensity, persists /ponytail mode switches, and registers the /ponytail
-// commands and skills so they work when the package is installed from npm.
-// Reuses the shared instruction builder so Claude Code, Codex, pi, and OpenCode
-// all read one source of truth.
+// intensity, persists /ponytail mode switches and "stop ponytail", and
+// registers the /ponytail commands and skills. Reuses the shared instruction
+// builder in hooks/, so every host reads one source of truth.
 //
-// OpenCode loads this as a server plugin — add it to your opencode.json:
-//   { "plugins": ["@dietrichgebert/ponytail"] }
+// OpenCode runs it from a checkout of https://github.com/happycapybara1/ponytail
+// (see INSTALL.md, "OpenCode"): opencode.json names the checkout's plugin dir,
+//   { "plugins": ["/path/to/ponytail/.opencode/plugins"] }
+// or, on OpenCode 1, this file: { "plugin": [".../.opencode/plugins/ponytail.mjs"] }
 //
 // One default export serves both plugin APIs: V2 reads `id` + `setup`, V1 calls
 // `server()`.
@@ -23,7 +24,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // The shared instruction builder is CommonJS; bridge to it from this ES module.
 const require = createRequire(import.meta.url);
 const { getPonytailInstructions } = require('../../hooks/ponytail-instructions');
-const { getDefaultMode, normalizeMode, writeDefaultMode } = require('../../hooks/ponytail-config');
+const { getDefaultMode, isDeactivationCommand, normalizeMode, writeDefaultMode } = require('../../hooks/ponytail-config');
 const { parseCommandFile, parseSkillFile } = require('./ponytail-frontmatter.cjs');
 
 // OpenCode has no flag-file convention of its own; keep mode beside its config.
@@ -67,6 +68,12 @@ function persistMode(args) {
   if (!mode) return;
   writeMode(mode);
   console.log('ponytail ' + mode);
+}
+
+// "stop ponytail" as the whole message turns the ruleset off until /ponytail,
+// the same rule as the Claude Code hook.
+function stopOnPhrase(text) {
+  if (isDeactivationCommand(text)) persistMode('off');
 }
 
 // V2 has no `config` hook: the domains that own these definitions own them now,
@@ -161,9 +168,15 @@ export default {
     };
     await ctx.session.hook('context', addRuleset);
     await ctx.session.hook('compaction', addRuleset);
+    // The prompt hook gets the typed prompt, the same object /ponytail's execute gets.
+    try {
+      await ctx.session.hook('prompt', (event) => stopOnPhrase(event?.prompt?.text));
+    } catch (e) {
+      // shortcut: an OpenCode 2 build without a prompt hook ignores the phrase; /ponytail off still works.
+    }
   },
 
-  // OpenCode V1: same three behaviors, as hooks on the V1 hook names.
+  // OpenCode V1: the same behaviors, as hooks on the V1 hook names.
   async server({ client } = {}) {
     const log = (level, message) => {
       try { client && client.app && client.app.log({ body: { service: 'ponytail', level, message } }); } catch (e) {}
@@ -200,6 +213,12 @@ export default {
         if (!input || input.command !== 'ponytail') return;
         persistMode(input.arguments);
         log('info', 'ponytail ' + readMode());
+      },
+
+      // Runs before this turn's system.transform, so the stop applies to its own turn.
+      'chat.message': async (_input, output) => {
+        const typed = (output?.parts ?? []).filter((part) => part.type === 'text' && !part.synthetic);
+        stopOnPhrase(typed.map((part) => part.text).join('\n'));
       },
     };
   },

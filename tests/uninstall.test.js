@@ -8,17 +8,25 @@ const { spawnSync } = require('child_process');
 
 const root = path.join(__dirname, '..');
 
-function runUninstall(env) {
+const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ponytail-uninstall-'));
+process.on('exit', () => fs.rmSync(temp, { recursive: true, force: true }));
+
+// Every run gets a throwaway home, Claude dir and config dirs: uninstall deletes
+// what it finds, so a missing override would delete the real ponytail state
+// (on Windows, %APPDATA%\ponytail\config.json).
+function runUninstall(dir) {
   return spawnSync(process.execPath, [path.join(root, 'scripts', 'uninstall.js')], {
-    env: { ...process.env, ...env },
+    env: {
+      ...process.env,
+      HOME: dir,
+      USERPROFILE: dir,
+      CLAUDE_CONFIG_DIR: path.join(dir, '.claude'),
+      XDG_CONFIG_HOME: path.join(dir, 'config-home'),
+      APPDATA: path.join(dir, 'appdata'),
+    },
     encoding: 'utf8',
   });
 }
-
-delete process.env.CLAUDE_CONFIG_DIR;
-
-const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'ponytail-uninstall-'));
-process.on('exit', () => fs.rmSync(temp, { recursive: true, force: true }));
 
 const home = path.join(temp, 'home');
 const claudeDir = path.join(home, '.claude');
@@ -27,143 +35,39 @@ fs.mkdirSync(claudeDir, { recursive: true });
 const flagPath = path.join(claudeDir, '.ponytail-active');
 fs.writeFileSync(flagPath, 'full');
 
-// Qoder keeps its flag in ~/.qoder (hooks/ponytail-runtime.js), and since
-// #676 it holds "off", so a leftover would start a reinstall switched off.
-const qoderFlagPath = path.join(home, '.qoder', '.ponytail-active');
-fs.mkdirSync(path.dirname(qoderFlagPath), { recursive: true });
-fs.writeFileSync(qoderFlagPath, 'ultra');
-const qoderCustomDir = path.join(temp, 'qoder-custom-config');
-const qoderCustomFlagPath = path.join(qoderCustomDir, '.ponytail-active');
-fs.mkdirSync(qoderCustomDir, { recursive: true });
-fs.writeFileSync(qoderCustomFlagPath, 'lite');
+// #662: per-project flags live in ponytail-modes/; a leftover "off" would start
+// a reinstall switched off.
+const modesDir = path.join(claudeDir, 'ponytail-modes');
+fs.mkdirSync(modesDir, { recursive: true });
+fs.writeFileSync(path.join(modesDir, 'abc123'), 'off');
 
 // OpenCode keeps its flag beside its own config; a leftover "off" would start a
 // reinstall switched off.
-const opencodeFlagPath = path.join(temp, 'config-home', 'opencode', '.ponytail-active');
+const opencodeFlagPath = path.join(home, 'config-home', 'opencode', '.ponytail-active');
 fs.mkdirSync(path.dirname(opencodeFlagPath), { recursive: true });
 fs.writeFileSync(opencodeFlagPath, 'off');
 
-const nudgeFlagPath = path.join(claudeDir, '.ponytail-statusline-nudged');
-fs.writeFileSync(nudgeFlagPath, '');
-
-const configDir = path.join(temp, 'config-home', 'ponytail');
-fs.mkdirSync(configDir, { recursive: true });
-const configPath = path.join(configDir, 'config.json');
+const configPath = path.join(home, 'config-home', 'ponytail', 'config.json');
+fs.mkdirSync(path.dirname(configPath), { recursive: true });
 fs.writeFileSync(configPath, JSON.stringify({ defaultMode: 'ultra' }));
 
-// #1032: the statusline script copy kept in the config dir.
-const statuslineCopyPath = path.join(claudeDir, 'ponytail-statusline.sh');
-fs.writeFileSync(statuslineCopyPath, '#!/usr/bin/env bash\n');
-const statuslinePs1CopyPath = path.join(claudeDir, 'ponytail-statusline.ps1');
-fs.writeFileSync(statuslinePs1CopyPath, '');
-
+// A user's own Claude settings are not ponytail's to touch.
 const settingsPath = path.join(claudeDir, 'settings.json');
-fs.writeFileSync(settingsPath, JSON.stringify({
-  statusLine: { type: 'command', command: 'bash /some/path/ponytail-statusline.sh' },
-}));
+const settings = JSON.stringify({ theme: 'dark' });
+fs.writeFileSync(settingsPath, settings);
 
-// The Cursor mode flag goes too (#817).
-const cursorDir = path.join(home, '.cursor');
-fs.mkdirSync(cursorDir, { recursive: true });
-const cursorFlagPath = path.join(cursorDir, '.ponytail-active');
-fs.writeFileSync(cursorFlagPath, 'lite');
-
-const env = {
-  HOME: home,
-  USERPROFILE: home,
-  XDG_CONFIG_HOME: path.join(temp, 'config-home'),
-};
-
-let result = runUninstall(env);
+let result = runUninstall(home);
 assert.equal(result.status, 0, result.stderr);
 assert.equal(fs.existsSync(flagPath), false, 'mode flag must be removed');
-assert.equal(fs.existsSync(qoderFlagPath), false, 'Qoder mode flag must be removed');
+assert.equal(fs.existsSync(modesDir), false, 'per-project mode flags must be removed');
 assert.equal(fs.existsSync(opencodeFlagPath), false, 'OpenCode mode flag must be removed');
-assert.equal(fs.existsSync(qoderCustomFlagPath), true, 'default Qoder uninstall must not touch a separate custom config');
-assert.equal(fs.existsSync(nudgeFlagPath), false, 'statusline nudge flag must be removed');
 assert.equal(fs.existsSync(configPath), false, 'config file must be removed');
-assert.equal(fs.existsSync(cursorFlagPath), false, 'Cursor mode flag must be removed');
-assert.equal(fs.existsSync(statuslineCopyPath), false, 'statusline script copy must be removed (#1032)');
-assert.equal(fs.existsSync(statuslinePs1CopyPath), false, 'statusline .ps1 copy must be removed (#1032)');
+assert.equal(fs.readFileSync(settingsPath, 'utf8'), settings, 'settings.json must be left unchanged');
 
-const settingsAfter = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-assert.equal(
-  settingsAfter.statusLine,
-  undefined,
-  'ponytail statusLine entry must be removed',
-);
-
-// A user's own, unrelated statusLine must survive untouched.
-fs.writeFileSync(settingsPath, JSON.stringify({
-  statusLine: { type: 'command', command: 'bash ~/my-custom-statusline.sh' },
-}));
-
-result = runUninstall(env);
+// Running again, or on an already-clean machine, must not throw.
+result = runUninstall(home);
 assert.equal(result.status, 0, result.stderr);
-const settingsAfter2 = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-assert.equal(
-  settingsAfter2.statusLine.command,
-  'bash ~/my-custom-statusline.sh',
-  "a user's own statusLine must not be touched",
-);
-
-// A user command that merely contains ponytail's script name must also survive.
-fs.writeFileSync(settingsPath, JSON.stringify({
-  statusLine: { type: 'command', command: 'bash ~/my-ponytail-statusline.sh' },
-}));
-
-result = runUninstall(env);
-assert.equal(result.status, 0, result.stderr);
-const settingsAfterSimilarName = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-assert.equal(
-  settingsAfterSimilarName.statusLine.command,
-  'bash ~/my-ponytail-statusline.sh',
-  "a similarly named user statusLine must not be touched",
-);
-
-// #374: a combined statusline (another plugin && ponytail) must keep the other
-// plugin's part — uninstall must not nuke the whole command or leave a husk.
-fs.writeFileSync(settingsPath, JSON.stringify({
-  statusLine: { type: 'command', command: 'bash ~/caveman-statusline.sh && bash /p/ponytail-statusline.sh' },
-}));
-
-result = runUninstall(env);
-assert.equal(result.status, 0, result.stderr);
-const settingsAfter3 = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-assert.equal(
-  settingsAfter3.statusLine.command,
-  'bash ~/caveman-statusline.sh',
-  'a combined statusLine must keep the non-ponytail command',
-);
-
-result = runUninstall({ ...env, QODER_CONFIG_DIR: qoderCustomDir });
-assert.equal(result.status, 0, result.stderr);
-assert.equal(fs.existsSync(qoderCustomFlagPath), false, 'Qoder custom config mode flag must be removed');
-
-// #434: a malformed settings.json must not crash the script mid-cleanup. It
-// can't be safely edited, so uninstall warns and leaves the file byte-for-byte
-// intact instead of throwing a SyntaxError after other state was already removed.
-const malformedSettings = '{ "statusLine": { "command": "ponytail-statusline.sh", broken';
-fs.writeFileSync(settingsPath, malformedSettings);
-
-result = runUninstall(env);
-assert.equal(
-  result.status,
-  0,
-  `expected exit 0 on malformed settings.json, got:\n${result.stdout}${result.stderr}`,
-);
-assert.ok(
-  /malformed/i.test(result.stdout + result.stderr),
-  'must warn that the statusLine entry could not be removed',
-);
-assert.equal(
-  fs.readFileSync(settingsPath, 'utf8'),
-  malformedSettings,
-  'malformed settings.json must be left unchanged',
-);
-
-// Running on an already-clean machine must not throw.
-result = runUninstall({ HOME: path.join(temp, 'home-empty'), USERPROFILE: path.join(temp, 'home-empty') });
+result = runUninstall(path.join(temp, 'home-empty'));
 assert.equal(result.status, 0, result.stderr);
 
 console.log('uninstall script checks passed');

@@ -81,13 +81,13 @@ function setupV2(overrides = {}) {
   return loadPlugin.setup(ctx).then(() => ({ added, prompts, hooks }));
 }
 
-test('V2 setup registers all six commands and all six skills', async () => {
+test('V2 setup registers all five commands and all five skills', async () => {
   const { added } = await setupV2();
   assert.deepEqual(
     added.commands.map((c) => c.name).sort(),
-    ['ponytail', 'ponytail-audit', 'ponytail-debt', 'ponytail-gain', 'ponytail-help', 'ponytail-review'],
+    ['ponytail', 'ponytail-audit', 'ponytail-debt', 'ponytail-help', 'ponytail-review'],
   );
-  assert.equal(added.skills.length, 6);
+  assert.equal(added.skills.length, 5);
   for (const skill of added.skills) {
     // V2 rejects a skill without these (Skill.Info: id, name, path, content).
     assert.ok(skill.id && skill.name && skill.path && skill.content, `incomplete skill ${skill.id}`);
@@ -99,9 +99,9 @@ test('V2 skill transform matches what OpenCode derives from the same SKILL.md', 
   const { added } = await setupV2();
   const ponytail = added.skills.find((s) => s.id === 'ponytail');
   const source = parseSkillFile(path.join(__dirname, '..', 'skills', 'ponytail', 'SKILL.md'));
+  // The folding rules themselves are covered by the parseSkillFile cases below.
   assert.equal(ponytail.description, source.description);
-  assert.ok(ponytail.description.startsWith('Lazy senior dev mode: the smallest change'), 'folded > block joined');
-  assert.ok(ponytail.description.endsWith('\n'), 'YAML closes a folded scalar with a newline');
+  assert.ok(ponytail.description.trim(), 'description parsed');
   assert.ok(!ponytail.description.includes('argument-hint'), 'block scalar stops at the next key');
   assert.equal(ponytail.content, source.body);
   assert.ok(!ponytail.content.includes('description:'), 'content is the body, frontmatter stripped');
@@ -182,6 +182,29 @@ test('V2 compaction hook injects the same ruleset as context, and stays silent w
   assert.deepEqual(quiet.system, []);
 });
 
+test('V2 "stop ponytail" as the whole message stops the ruleset until /ponytail', async () => {
+  try { fs.unlinkSync(statePath); } catch (e) {}
+  const { added, hooks } = await setupV2();
+  const prompt = (text) => hooks.prompt({ sessionID: 's', messageID: 'm', prompt: { text }, delivery: 'steer' });
+  const context = async () => {
+    const event = { system: [] };
+    await hooks.context(event);
+    return event.system;
+  };
+
+  await prompt('why did you stop ponytail mode?');
+  assert.equal((await context()).length, 1, 'only the whole stop phrase turns the ruleset off');
+
+  await prompt('  Stop Ponytail! ');
+  assert.equal(fs.readFileSync(statePath, 'utf8'), 'off');
+  assert.deepEqual(await context(), []);
+  await prompt('write a function');
+  assert.deepEqual(await context(), [], 'stays off on later prompts');
+
+  await added.commands.ponytail.execute({ sessionID: 's', prompt: { text: '' }, delivery: 'steer' });
+  assert.match((await context())[0].text, /PONYTAIL MODE ACTIVE — level: full/, '/ponytail switches it back on');
+});
+
 test('V2 unsupported /ponytail arguments do not reset the current mode', async () => {
   const { added } = await setupV2();
   fs.writeFileSync(statePath, 'ultra');
@@ -246,6 +269,24 @@ test('/ponytail off persists off and transform injects nothing', async () => {
   assert.equal(fs.readFileSync(statePath, 'utf8'), 'off');
   const system = await transform(hooks);
   assert.deepEqual(system, []);
+});
+
+test('V1 "stop ponytail" as the whole message stops the ruleset until /ponytail', async () => {
+  try { fs.unlinkSync(statePath); } catch (e) {}
+  const hooks = await loadPlugin.server({});
+  const message = (parts) => hooks['chat.message']({ sessionID: 's' }, { message: {}, parts });
+
+  await message([{ type: 'text', text: 'stop ponytail from rewriting my tests' }]);
+  assert.equal((await transform(hooks)).length, 1, 'only the whole stop phrase turns the ruleset off');
+
+  await message([{ type: 'text', text: 'stop ponytail.' }, { type: 'text', text: 'attached file', synthetic: true }]);
+  assert.equal(fs.readFileSync(statePath, 'utf8'), 'off');
+  assert.deepEqual(await transform(hooks), []);
+  await message(undefined);
+  assert.deepEqual(await transform(hooks), [], 'stays off, and a message without parts does not throw');
+
+  await hooks['command.execute.before']({ command: 'ponytail', arguments: '', sessionID: 's' });
+  assert.match((await transform(hooks))[0], /PONYTAIL MODE ACTIVE — level: full/, '/ponytail switches it back on');
 });
 
 test('system.transform merges into existing system entry (Qwen compat, #296)', async () => {

@@ -36,6 +36,20 @@ const HOOK_SCRIPT = /hooks[\\/]([\w.-]+\.(?:js|mjs|cjs|ps1|sh))/;
 // command, so a hostile install path can break out of the quoting.
 const PLUGIN_ROOT_PLACEHOLDER = /\$\{(?:CLAUDE_)?PLUGIN_ROOT\}/;
 
+// A throwaway home and config dirs for every hook these cases run, so none of
+// them reads or writes the real ~/.claude, ~/.config/ponytail or
+// %APPDATA%\ponytail state.
+function isolatedEnv(dir) {
+  return {
+    ...process.env,
+    HOME: dir,
+    USERPROFILE: dir,
+    XDG_CONFIG_HOME: path.join(dir, 'xdg-config'),
+    APPDATA: path.join(dir, 'appdata'),
+    CLAUDE_CONFIG_DIR: path.join(dir, '.claude'),
+  };
+}
+
 // Read inside each case so a missing/malformed file fails as a clean assertion,
 // not a load-time crash.
 function commandHooks() {
@@ -112,9 +126,9 @@ test('every hook command points at a script that ships in hooks/', () => {
 for (const script of ['ponytail-mode-tracker.js', 'ponytail-activate.js']) {
   test(`${script} self-exits when stdin never closes (no freeze)`, async () => {
     const hook = path.join(root, 'hooks', script);
-    // A throwaway home: the activate fallback writes the flag and the statusline copy.
+    // A throwaway home: the activate fallback writes the flag.
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ponytail-stdin-'));
-    const env = { ...process.env, HOME: home, USERPROFILE: home, CLAUDE_CONFIG_DIR: path.join(home, '.claude'), PONYTAIL_MAP: '0' };
+    const env = isolatedEnv(home);
     // stdin is a pipe we never write to or end, reproducing the deadlock.
     const child = spawn(process.execPath, [hook], { env, stdio: ['pipe', 'ignore', 'ignore'] });
 
@@ -179,6 +193,8 @@ test('a hostile plugin root cannot inject shell commands via host-side textual s
   assert.ok(commands.length > 0, 'expected at least one command to check');
 
   const marker = path.join(os.tmpdir(), `ponytail-824-marker-${process.pid}`);
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'ponytail-824-'));
+  const env = isolatedEnv(home);
   const hostileRoot = isWindows
     ? `C:\\x" ; New-Item -ItemType File -Path "${marker}" ; "`
     : `/tmp/x"; touch "${marker}"; echo "`;
@@ -190,9 +206,9 @@ test('a hostile plugin root cannot inject shell commands via host-side textual s
       .replace(/\$\{PLUGIN_ROOT\}/g, hostileRoot);
     try {
       if (isWindows) {
-        execFileSync('powershell', ['-NoProfile', '-Command', substituted], { stdio: 'ignore' });
+        execFileSync('powershell', ['-NoProfile', '-Command', substituted], { env, stdio: 'ignore' });
       } else {
-        execFileSync('bash', ['-c', substituted], { stdio: 'ignore' });
+        execFileSync('bash', ['-c', substituted], { env, stdio: 'ignore' });
       }
     } catch (e) {
       // Expected to fail (resolves to a bogus module path) — only whether
@@ -201,4 +217,5 @@ test('a hostile plugin root cannot inject shell commands via host-side textual s
     assert.equal(fs.existsSync(marker), false, `hostile plugin root injected shell commands via: ${cmd}`);
   }
   fs.rmSync(marker, { force: true });
+  fs.rmSync(home, { recursive: true, force: true });
 });
