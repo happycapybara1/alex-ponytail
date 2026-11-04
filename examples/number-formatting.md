@@ -25,7 +25,7 @@ new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" })
   .format(1234567.89);
 // → "$1,234,567.89"
 
-new Intl.NumberFormat("en-US", { style: "percent" })
+new Intl.NumberFormat("en-US", { style: "percent", maximumFractionDigits: 1 })
   .format(0.745);
 // → "74.5%"
 

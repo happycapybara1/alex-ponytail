@@ -93,9 +93,16 @@ While active, the ruleset is also injected into every subagent spawned via the A
 |------|---------|
 | Claude Code | `/plugin remove ponytail` |
 | Codex | `codex plugin remove ponytail` |
-| GitHub Copilot CLI | the remove command listed by `copilot plugin --help` |
+| GitHub Copilot CLI | `copilot plugin uninstall ponytail` |
 | Gemini CLI | `gemini extensions uninstall ponytail` |
 | OpenCode | Remove the `plugins` entry, then delete the checkout |
 | Copilot Chat | Delete the copied `.github/copilot-instructions.md` |
 
-These remove the plugin's own files. They leave behind a small amount of state ponytail writes outside the plugin folder: the mode flag (`~/.claude/.ponytail-active`), `~/.config/ponytail/config.json`, the statusline script copy (`~/.claude/ponytail-statusline.sh` or `.ps1`), and (if you accepted the setup nudge) a `statusLine` entry in `~/.claude/settings.json`. Run `node scripts/uninstall.js` to clean those up too. **Run it before the host remove command above**: the script is itself a plugin file, so removing the plugin first deletes it. It only removes the statusLine entry if it points at ponytail's own script.
+These remove the plugin's own files. Ponytail also keeps a little state outside the plugin folder: its mode flags (such as `~/.claude/.ponytail-active`) and, if you made one, `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). To remove those too, run the uninstall script from a fresh checkout, before or after the commands above:
+
+```bash
+git clone --depth 1 https://github.com/happycapybara1/ponytail ponytail-uninstall
+node ponytail-uninstall/scripts/uninstall.js
+```
+
+Then delete the `ponytail-uninstall` folder.

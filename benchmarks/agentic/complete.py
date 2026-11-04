@@ -117,7 +117,7 @@ def submission(ws, tid):
         if not text.strip() and (ws / "_claude.json").exists():
             try: text = json.loads((ws / "_claude.json").read_text(encoding="utf-8")).get("result", "") or ""
             except ValueError: text = ""                # the agent timed out: nothing delivered
-    return re.sub(r"\bponytail:", "note:", text, flags=re.I)
+    return re.sub(r"\b(?:ponytail|shortcut):", "note:", text, flags=re.I)
 
 def run(run_dir, key, model=JUDGE_MODEL, arms=None, workers=6):
     run_dir = Path(run_dir)

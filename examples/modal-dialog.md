@@ -45,7 +45,8 @@ A dependency, a portal, an overlay, a root, a trigger, a content wrapper, to sho
 
 ```html
 <!-- ponytail: browser has one, with focus trapping and backdrop built in -->
-<dialog id="confirm-delete">
+<dialog id="confirm-delete" aria-labelledby="confirm-title">
+  <h2 id="confirm-title">Confirm deletion</h2>
   <p>This action cannot be undone.</p>
   <button id="cancel">Cancel</button>
   <button id="confirm">Delete</button>
@@ -61,4 +62,4 @@ document.getElementById("confirm").onclick = () => { onConfirm(); dialog.close()
 dialog.showModal();
 ```
 
-**1 dependency + 30 lines → 0 dependencies + 8 lines.** The native `<dialog>` traps focus automatically, closes on Escape, renders a backdrop via `::backdrop`, and is accessible by default. All browsers since 2022. The library was solving a problem the platform solved.
+**1 dependency + 30 lines → 0 dependencies + 10 lines.** The native `<dialog>` opened with `showModal()` makes the rest of the page inert, closes on Escape, renders a backdrop via `::backdrop`, and has the dialog role built in; `aria-labelledby` gives it its accessible name. All browsers since 2022. The library was solving a problem the platform solved.

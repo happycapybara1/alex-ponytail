@@ -1,7 +1,7 @@
 # Agentic benchmark
 
-The single-shot benchmark (`../promptfooconfig.yaml`) measures one prompt, one completion.
-A fair critique ([#126](https://github.com/DietrichGebert/ponytail/issues/126)) is that this
+An earlier single-shot benchmark (one prompt, one completion; removed from this fork) drew a
+fair critique ([#126](https://github.com/DietrichGebert/ponytail/issues/126)) is that this
 does not reflect how a coding agent is actually used, and that counting lines of a
 conversational answer (which dumps multiple options and commentary) inflates the baseline.
 
@@ -25,7 +25,7 @@ the job properly, so any difference is the skill's effect, not the model being c
 
 ## Arms
 
-`baseline` (no skill) · `ponytail` · `caveman` · `yagni` ("Follow YAGNI principles.") ·
+`baseline` (no skill) · `ponytail` · `yagni` ("Follow YAGNI principles.") ·
 `yagni-oneliner` ("Follow YAGNI principles, and prefer one-liner solutions.")
 
 The last two are the seven-word prompts from the #126 writeup, included on purpose: if a one-line
@@ -139,10 +139,10 @@ cd full-stack-fastapi-template && git checkout cd83fc1
 python run.py --selftest                                    # prove the instruments, no API -- run first
 # LOC tier (12 real-repo features):
 python run.py --task tmpl-fe-datepicker,tmpl-fe-colorpicker,tmpl-fe-command,tmpl-fe-dropzone,tmpl-fe-wizard,tmpl-fe-rating,tmpl-be-duplicate,tmpl-be-search,tmpl-be-count,tmpl-be-archive,tmpl-be-bulkdelete,tmpl-be-csv \
-  --arms baseline,caveman,ponytail,yagni-oneliner --models haiku --runs 4 --workers 6
+  --arms baseline,ponytail,yagni-oneliner --models opus --runs 5 --workers 6
 # safety tier (7 surgical tasks):
 python run.py --task safe-path,critic-email,rate-limit,sql-user,auth-token,csv-sum,cache \
-  --arms baseline,caveman,ponytail,yagni-oneliner --models haiku --runs 4 --workers 6
+  --arms baseline,ponytail,yagni-oneliner --models opus --runs 5 --workers 6
 python run.py --rescore runs/<stamp>                        # recompute metrics offline, no API
 ```
 
@@ -158,7 +158,7 @@ re-applied offline with `--rescore`, you never pay the API twice for a measureme
 - It **can** show whether a skill keeps code minimal *without* dropping safety **or
   completeness**, on real multi-file edits, across model sizes, with variance. Less code that
   also does less is caught by the completeness judge, not rewarded.
-- It **cannot** claim production-readiness from six tasks, and a deterministic safety check is a
+- It **cannot** claim production-readiness from 39 tasks, and a deterministic safety check is a
   floor, not a proof of security. The over-engineering source-LOC proxy is supplemented by an
   LLM judge (`judge.py`), and the "did it actually build the feature" question by a second
   judge (`complete.py`).
@@ -179,23 +179,11 @@ re-applied offline with `--rescore`, you never pay the API twice for a measureme
 repo and was moved to `runs/<stamp>/` afterwards; inside a repo, Claude Code shows the model recent commit
 messages. Full writeup: [results/2026-10-07-agentic.md](../results/2026-10-07-agentic.md).
 
-**Earlier: 2026-06-18, Haiku 4.5, `n=4`, previous Ponytail.** Two tiers:
+Earlier runs of the previous Ponytail (June 2026) are in the upstream repo's history.
 
-- **12 real-repo features** (LOC via `git diff`): ponytail cuts **60–94%** on features with an
-  over-build trap (date picker 404→23, color picker 287→23, dropzone 251→95) and is a wash on
-  irreducible code (backend CRUD). It never writes more. Colin's one-liner prompt is erratic, great
-  on the color picker, near or above baseline on the date picker, wizard, and command palette.
-- **6 surgical safety tasks** (produced code executed against adversarial input): baseline,
-  caveman, and ponytail are **100% safe** (20/20); `yagni-oneliner` is **95%** (19/20), it dropped
-  the path-traversal guard once on `safe-path`, the one task where it wrote the fewest lines. The
-  lines it cut were the guard.
-
-Full writeup with per-task tables and analysis:
-[results/2026-06-18-agentic.md](../results/2026-06-18-agentic.md).
-
-> The earlier `results/2026-06-17-agentic-safety.md` run (the ~4% gap) is **superseded**: its
+> An earlier upstream run (2026-06-17, the ~4% gap) is **superseded**: its
 > baseline was contaminated by the ponytail plugin's `SessionStart` hook firing on every arm, so
 > the baseline was secretly running ponytail. Isolation is now enforced with `--setting-sources
 > project,local` plus a per-arm `--plugin-dir`, and every cell runs with
-> `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, because cells live inside
-> this repo and would otherwise all load its `AGENTS.md` (the ponytail ruleset) and your memory.
+> `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1 CLAUDE_CODE_DISABLE_AUTO_MEMORY=1`, so no cell loads an
+> `AGENTS.md` (the ponytail ruleset) or your memory.

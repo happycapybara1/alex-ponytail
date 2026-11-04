@@ -36,12 +36,8 @@ task-medians for the "5 tasks" figure.
   (gpt-4.1-mini 35.7% vs 39.6%, gpt-5.4-mini 28.7% vs 26.2% more expensive). Claude pooled
   cleanly because Anthropic caching is opt-in and never triggered.
 
-Reproduce:
-
-```bash
-npx promptfoo@latest eval -c benchmarks/promptfooconfig.yaml --env-file .env --repeat 10
-npx promptfoo@latest eval -c benchmarks/promptfooconfig.gpt-newest.yaml --env-file .env --repeat 10
-```
+Reproduce: the promptfoo configs were removed from this fork; they are in the upstream repo's
+history (`benchmarks/promptfooconfig.yaml`, `benchmarks/promptfooconfig.gpt-newest.yaml`).
 
 ## Results
 
@@ -88,6 +84,4 @@ about code generation cost on Claude, not a universal or cross-provider promise.
 
 - About 22 of 1350 Claude reps dropped on transient empty responses; excluded from medians,
   immaterial at this n. OpenAI runs were 100% complete.
-- Reproduce from the committed configs: `promptfooconfig.yaml` (Claude),
-  `promptfooconfig.gpt-newest.yaml` (OpenAI), `promptfooconfig.gemini.yaml` (Gemini). The
-  raw eval JSON is gitignored and regenerable.
+- The promptfoo configs used here are in the upstream repo's history, not in this fork.

@@ -171,8 +171,8 @@ def run(run_dir, key):
         if isinstance(r["over_engineering"], int): by_arm[r["arm"]].append(r["over_engineering"])
     print(f"\n=== over-engineering by arm (judge: {JUDGE_MODEL}, 0=minimal .. 3=over-built) ===")
     print(f"  {'arm':16} {'n':>4} {'mean':>6} {'max':>4}")
-    for arm in ["baseline", "caveman", "ponytail", "yagni", "yagni-oneliner"]:
-        v = by_arm.get(arm, [])
+    for arm in sorted(by_arm):
+        v = by_arm[arm]
         if v: print(f"  {arm:16} {len(v):>4} {sum(v)/len(v):>6.2f} {max(v):>4}")
     worst = sorted([r for r in scored if isinstance(r["over_engineering"], int) and r["over_engineering"] >= 2],
                    key=lambda r: -r["over_engineering"])
@@ -186,8 +186,7 @@ def main():
     ap.add_argument("--selftest", action="store_true")
     ap.add_argument("--run", help="run dir to judge")
     args = ap.parse_args()
-    key = load_key()
-    if not key: sys.exit("no ANTHROPIC_API_KEY (.env or env)")
+    key = load_key()                                   # None -> judge_call uses the claude CLI
     if args.selftest: sys.exit(selftest(key))
     if args.run:
         if selftest(key): sys.exit("judge not trustworthy; refusing to judge the matrix")

@@ -35,7 +35,6 @@ def _skill(rel): return (ROOT / rel).read_text(encoding="utf-8")
 ARMS = {
     "baseline":       lambda: None,
     "ponytail":       lambda: _skill("skills/ponytail/SKILL.md"),
-    "caveman":        lambda: _skill("benchmarks/arms/caveman-SKILL.md"),
     "yagni":          lambda: "Follow YAGNI principles.",
     "yagni-oneliner": lambda: "Follow YAGNI principles, and prefer one-liner solutions.",
     "brief":          lambda: "Be brief.",   # the two words that matched caveman in an independent test
@@ -50,7 +49,7 @@ MODELS = {"haiku": "claude-haiku-4-5-20251001", "sonnet": "claude-sonnet-5-5", "
 # Skills are plugins activated by a SessionStart hook. To test exactly one at a time we exclude the
 # user's globally-enabled plugins (--setting-sources project,local) and load one plugin from its
 # cache dir (--plugin-dir). The smoke test verifies activation by output style.
-PLUGIN_ARMS = ("ponytail", "caveman", "ponytail2")          # arms activated via --plugin-dir (vs raw --append prompts)
+PLUGIN_ARMS = ("ponytail", "ponytail2")          # arms activated via --plugin-dir (vs raw --append prompts)
 PLUGIN_CACHE = Path.home() / ".claude" / "plugins" / "cache"
 
 def _plugin_dir(name):

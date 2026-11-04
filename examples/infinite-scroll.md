@@ -35,16 +35,16 @@ A dependency to watch scroll position and fire a callback.
 // ponytail: IntersectionObserver does this, no scroll listener needed
 import { useEffect, useRef } from "react";
 
-export function Feed({ items, fetchMore, hasMore }) {
+export function Feed({ items, fetchMore, hasMore, loading }) {
   const sentinel = useRef(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && hasMore) fetchMore();
+      if (entry.isIntersecting && hasMore && !loading) fetchMore();
     });
     if (sentinel.current) observer.observe(sentinel.current);
     return () => observer.disconnect();
-  }, [hasMore, fetchMore]);
+  }, [hasMore, loading, fetchMore]);
 
   return (
     <>
@@ -55,4 +55,4 @@ export function Feed({ items, fetchMore, hasMore }) {
 }
 ```
 
-**1 dependency → 0 dependencies.** `IntersectionObserver` fires only when the sentinel enters the viewport, no scroll event, no throttling, no jank. Ships in every browser. The library wraps exactly this API.
+**1 dependency → 0 dependencies.** `IntersectionObserver` fires only when the sentinel enters the viewport, no scroll event, no throttling, no jank. Ships in every browser. The library wraps exactly this API. `loading` matters: a new observer reports a visible sentinel right away, so without it every re-render during a fetch starts another one.
