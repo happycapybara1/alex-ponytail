@@ -13,7 +13,7 @@ function stripFrontmatter(text) {
 }
 
 const agents = read('AGENTS.md');
-const canonical = agents.replace(/\n\n\(Yes, this file also applies[\s\S]*?\)$/, '').trim();
+const canonical = agents;
 
 // Compact copies: same body as AGENTS.md, host-specific frontmatter stripped.
 const copies = [

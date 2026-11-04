@@ -1,70 +1,41 @@
 ---
 name: ponytail-help
 description: >
-  Quick reference for ponytail levels, skills and commands. One-shot display.
-  Use for /ponytail-help, "ponytail help", "how do I use ponytail".
+  Quick reference for ponytail levels, skills and commands. Use for
+  /ponytail-help.
+disable-model-invocation: true
 ---
 
-# Ponytail Help
-
-Display this reference card when invoked. One-shot, do NOT change mode,
-write flag files, or persist anything.
+Show this card. Change nothing: no mode switch, no flag files.
 
 ## Levels
 
-| Level | Trigger | What change |
-|-------|---------|-------------|
-| **Lite** | `/ponytail lite` | Build what was asked, name the smaller option in one line. |
-| **Full** | `/ponytail` | The smallest complete change, a check where the logic needs one, and a reply that names what was skipped and any risk. Default. |
-| **Ultra** | `/ponytail ultra` | Also questions the request and pushes back before building. |
-
-Level sticks until changed or session end.
-
-## Skills
-
-| Skill | Trigger | What it does |
+| Level | Command | What changes |
 |-------|---------|--------------|
-| **ponytail** | `/ponytail` | Lazy mode itself: least new code, clear replies that name skipped work and risks. |
-| **ponytail-review** | `/ponytail-review` | Quality review of a diff: bugs, security, load, missing tests, speed, what to cut. Each finding says what goes wrong and how to fix it. |
-| **ponytail-audit** | `/ponytail-audit` | The same quality review for the whole repo, ranked. |
-| **ponytail-debt** | `/ponytail-debt` | Harvest `shortcut:` comments into a tracked ledger. |
-| **ponytail-gain** | `/ponytail-gain` | Measured-impact scoreboard: less code, less cost, more speed. |
-| **ponytail-help** | `/ponytail-help` | This card. |
+| **Lite** | `/ponytail lite` | Builds what was asked and names the smaller option in one line. |
+| **Full** | `/ponytail` | The smallest complete change, a check where the logic needs one, and one line on what was skipped and any risk. Default. |
+| **Ultra** | `/ponytail ultra` | Also pushes back on the request before building. |
 
-In Codex CLI and the IDE extension, invoke skills with `$ponytail:ponytail`,
-`$ponytail:ponytail-review`, or `$ponytail:ponytail-help`. Claude Code and OpenCode use the
-slash-command forms above (OpenCode ships all six as slash commands).
+The level lasts until you change it or the session ends. Off: say "stop ponytail" or use `/ponytail off`. Back on: `/ponytail`.
 
-## Deactivate
+## Commands
 
-Say "stop ponytail" or "normal mode". Resume anytime with `/ponytail`.
-`/ponytail off` also works.
+| Command | What it does |
+|---------|--------------|
+| `/ponytail` | The mode itself: least new code, one line on skipped work and risks. |
+| `/ponytail-review` | Review a change: bugs, security, real load, missing tests, speed, code to cut. |
+| `/ponytail-audit` | The same review for the whole repo, ranked. |
+| `/ponytail-debt` | List `shortcut:` comments as a debt ledger. |
+| `/ponytail-help` | This card. |
 
-## Configure Default Mode
+In Codex, use `$ponytail:ponytail`, `$ponytail:ponytail-review` and so on.
 
-Default mode = `full`, auto-active every session. Change it:
+## Default level
 
-**Environment variable** (highest priority):
-```bash
-export PONYTAIL_DEFAULT_MODE=ultra
-```
-
-**Config file** (`~/.config/ponytail/config.json`, Windows: `%APPDATA%\ponytail\config.json`):
-```json
-{ "defaultMode": "lite" }
-```
-
-Set `"off"` to disable auto-activation on session start, activate manually
-with `/ponytail` when wanted.
-
-Resolution: env var > config file > `full`.
+`full`, on in every session. To change it, set `PONYTAIL_DEFAULT_MODE=ultra` (wins over the file) or put `{ "defaultMode": "lite" }` in `~/.config/ponytail/config.json` (Windows: `%APPDATA%\ponytail\config.json`). `"off"` stops auto-start; then turn it on with `/ponytail` when you want it.
 
 ## Update
 
-Enable auto-update once: open `/plugin`, go to Marketplaces, pick ponytail, Enable auto-update. Claude Code then pulls new versions at startup (run `/reload-plugins` when it prompts). Manual refresh: `/plugin marketplace update ponytail` then `/reload-plugins`.
+Claude Code: `/plugin marketplace update ponytail`, then `/reload-plugins`. To update automatically, open `/plugin`, go to Marketplaces, pick ponytail and enable auto-update. Other tools: see INSTALL.md.
 
-If `/plugin` is not recognized, your Claude Code is out of date. Update it (`npm install -g @anthropic-ai/claude-code@latest`, or `brew upgrade claude-code`) and restart. Other hosts use their own update flow.
-
-## More
-
-Full docs + examples: https://github.com/DietrichGebert/ponytail
+Docs: https://github.com/happycapybara1/ponytail

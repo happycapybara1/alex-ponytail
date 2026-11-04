@@ -22,7 +22,7 @@ test('the skills include at least the base command', () => {
   assert.ok(commands.includes('ponytail'), 'expected a skills/ponytail folder');
 });
 
-test('every registered command ships a Claude commands/*.toml', () => {
+test('every registered command ships a Gemini commands/*.toml', () => {
   for (const name of commands) {
     assert.ok(
       fs.existsSync(path.join(root, 'commands', `${name}.toml`)),
