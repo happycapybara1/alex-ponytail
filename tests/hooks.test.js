@@ -192,6 +192,7 @@ assert.ok(output.hookSpecificOutput.additionalContext.endsWith(getPonytailInstru
 for (const [prompt, mode] of [
   ['$ponytail full', 'full'],
   ['@ponytail ultra', 'ultra'],
+  ['/alex-ponytail:ponytail ultra', 'ultra'],
   ['/ponytail:ponytail lite', 'lite'],
 ]) {
   result = run('ponytail-mode-tracker.js', codexEnv, JSON.stringify({ prompt }));
@@ -625,6 +626,13 @@ assert.equal(
   'full',
   'namespaced /ponytail:ponytail-review must not latch review either (#736)',
 );
+result = run(
+  'ponytail-mode-tracker.js',
+  latchEnv,
+  JSON.stringify({ prompt: '/alex-ponytail:ponytail-review src/app.js' }),
+);
+assert.equal(result.status, 0, result.stderr);
+assert.equal(fs.readFileSync(latchFlag, 'utf8'), 'full', 'the alex-ponytail: prefix must not latch review either');
 
 fs.unlinkSync(latchFlag);
 result = run('ponytail-mode-tracker.js', latchEnv, JSON.stringify({ prompt: '/ponytail-review' }));

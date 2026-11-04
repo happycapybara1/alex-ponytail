@@ -16,7 +16,9 @@ function finish() {
   try {
     // Strip UTF-8 BOM some shells prepend when piping (breaks JSON.parse)
     const data = JSON.parse(input.replace(/^\uFEFF/, ''));
-    const prompt = (data.prompt || '').trim().toLowerCase();
+    // A plugin-namespaced command (/alex-ponytail:ponytail-review) is the same command.
+    const prompt = (data.prompt || '').trim().toLowerCase()
+      .replace(/^([/@$])(?:alex-)?ponytail:(?=ponytail)/, '$1');
 
     // Match /ponytail commands
     if (/^[/@$]ponytail/.test(prompt)) {
@@ -28,7 +30,7 @@ function finish() {
       let isReportOnly = false;
 
       // /ponytail-review is a one-shot skill, not a session level (#736).
-      if (cmd === '/ponytail' || cmd === '/ponytail:ponytail') {
+      if (cmd === '/ponytail') {
         // `/ponytail default <mode>` persists the default to config (survives
         // restarts). Plain switches stay session-scoped ("sticks until session
         // end"), so this is the only path that writes config. review is not a

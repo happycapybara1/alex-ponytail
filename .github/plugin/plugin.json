@@ -1,13 +1,13 @@
 {
-  "name": "ponytail",
+  "name": "alex-ponytail",
   "description": "Lazy senior dev mode. Forces the simplest, shortest solution that actually works: YAGNI, stdlib first, no unrequested abstractions.",
   "version": "5.5.0",
   "author": {
     "name": "Dietrich Gebert",
     "url": "https://github.com/DietrichGebert"
   },
-  "homepage": "https://github.com/happycapybara1/ponytail",
-  "repository": "https://github.com/happycapybara1/ponytail",
+  "homepage": "https://github.com/happycapybara1/alex-ponytail",
+  "repository": "https://github.com/happycapybara1/alex-ponytail",
   "license": "MIT",
   "keywords": ["yagni", "minimalism", "code-review", "productivity"],
   "commands": "commands/",

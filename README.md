@@ -64,17 +64,17 @@ The whole thing is one prompt: [`skills/ponytail/SKILL.md`](skills/ponytail/SKIL
 **Claude Code** (CLI, desktop app or web), as two separate prompts:
 
 ```
-/plugin marketplace add happycapybara1/ponytail
+/plugin marketplace add happycapybara1/alex-ponytail
 ```
 ```
-/plugin install ponytail@ponytail
+/plugin install alex-ponytail@alex-ponytail
 ```
 
 **Codex:**
 
 ```bash
-codex plugin marketplace add happycapybara1/ponytail
-codex plugin add ponytail@ponytail
+codex plugin marketplace add happycapybara1/alex-ponytail
+codex plugin add alex-ponytail@alex-ponytail
 ```
 
 Then open `/hooks` in Codex, trust its two lifecycle hooks, and start a new thread.
@@ -93,7 +93,7 @@ It is on in every session at the `full` level. Turn it off with "stop ponytail" 
 | `/ponytail-debt` | List the `shortcut:` comments you deferred, so "later" doesn't become "never". |
 | `/ponytail-help` | Quick reference. |
 
-`/ponytail-debt` and `/ponytail-help` only run when you type them. In Codex, commands are skills: `$ponytail:ponytail-review`. Copilot Chat in the editor gets the always-on rules from `.github/copilot-instructions.md`, without the commands.
+`/ponytail-debt` and `/ponytail-help` only run when you type them. In Codex, commands are skills: `$alex-ponytail:ponytail-review`. Copilot Chat in the editor gets the always-on rules from `.github/copilot-instructions.md`, without the commands.
 
 ## FAQ
 

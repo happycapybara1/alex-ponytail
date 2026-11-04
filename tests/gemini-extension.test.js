@@ -13,7 +13,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..');
 const MANIFEST = 'gemini-extension.json';
-const EXTENSION_NAME = 'ponytail';
+const EXTENSION_NAME = 'alex-ponytail';
 // Floating refs are a supply-chain footgun; the manifest version must be pinned.
 const PINNED_SEMVER = /^\d+\.\d+\.\d+$/;
 const VERSIONED_MANIFESTS = [

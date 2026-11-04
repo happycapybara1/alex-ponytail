@@ -7,10 +7,10 @@ The Claude Code and Codex plugins run small Node.js lifecycle hooks, so `node` n
 ## Claude Code
 
 ```
-/plugin marketplace add happycapybara1/ponytail
+/plugin marketplace add happycapybara1/alex-ponytail
 ```
 ```
-/plugin install ponytail@ponytail
+/plugin install alex-ponytail@alex-ponytail
 ```
 (You have to send two separate prompts for the install to work) 
 
@@ -20,8 +20,8 @@ Same steps in the Claude Code Desktop app's Code tab: type the two `/plugin` com
 ## Codex
 
 ```bash
-codex plugin marketplace add happycapybara1/ponytail
-codex plugin add ponytail@ponytail
+codex plugin marketplace add happycapybara1/alex-ponytail
+codex plugin add alex-ponytail@alex-ponytail
 ```
 
 Run `codex` and open `/hooks`, review and trust its two lifecycle hooks, and start a new thread.
@@ -31,22 +31,22 @@ This same install also covers the Codex desktop app: restart the app after insta
 ## GitHub Copilot CLI
 
 ```bash
-copilot plugin marketplace add happycapybara1/ponytail
-copilot plugin install ponytail@ponytail
+copilot plugin marketplace add happycapybara1/alex-ponytail
+copilot plugin install alex-ponytail@alex-ponytail
 ```
 
 In an interactive Copilot CLI session, use the slash equivalents:
 
 ```
-/plugin marketplace add happycapybara1/ponytail
-/plugin install ponytail@ponytail
+/plugin marketplace add happycapybara1/alex-ponytail
+/plugin install alex-ponytail@alex-ponytail
 ```
 
 Copilot CLI namespaces plugin commands by plugin name. For example:
 
 ```text
-/ponytail:ponytail ultra
-/ponytail:ponytail-review
+/alex-ponytail:ponytail ultra
+/alex-ponytail:ponytail-review
 ```
 
 ### Copilot Chat in VS Code, JetBrains or Visual Studio
@@ -58,7 +58,7 @@ Copy [`.github/copilot-instructions.md`](.github/copilot-instructions.md) into y
 Run the plugin from a checkout of this fork:
 
 ```bash
-git clone https://github.com/happycapybara1/ponytail ~/ponytail
+git clone https://github.com/happycapybara1/alex-ponytail ~/ponytail
 ```
 
 Then add the checkout's plugin directory to your project's `opencode.json` (use the absolute path to share one checkout across projects):
@@ -74,7 +74,7 @@ Update with `git -C ~/ponytail pull`.
 ## Gemini CLI
 
 ```bash
-gemini extensions install https://github.com/happycapybara1/ponytail
+gemini extensions install https://github.com/happycapybara1/alex-ponytail
 ```
 
 Loads the ruleset as always-on context every session and registers the `/ponytail` commands; the `skills/` ship too, activated when a task needs them.
@@ -91,17 +91,17 @@ While active, the ruleset is also injected into every subagent spawned via the A
 
 | Host | Command |
 |------|---------|
-| Claude Code | `/plugin remove ponytail` |
-| Codex | `codex plugin remove ponytail` |
-| GitHub Copilot CLI | `copilot plugin uninstall ponytail` |
-| Gemini CLI | `gemini extensions uninstall ponytail` |
+| Claude Code | `/plugin remove alex-ponytail` |
+| Codex | `codex plugin remove alex-ponytail` |
+| GitHub Copilot CLI | `copilot plugin uninstall alex-ponytail` |
+| Gemini CLI | `gemini extensions uninstall alex-ponytail` |
 | OpenCode | Remove the `plugins` entry, then delete the checkout |
 | Copilot Chat | Delete the copied `.github/copilot-instructions.md` |
 
 These remove the plugin's own files. Ponytail also keeps a little state outside the plugin folder: its mode flags (such as `~/.claude/.ponytail-active`) and, if you made one, `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). To remove those too, run the uninstall script from a fresh checkout, before or after the commands above:
 
 ```bash
-git clone --depth 1 https://github.com/happycapybara1/ponytail ponytail-uninstall
+git clone --depth 1 https://github.com/happycapybara1/alex-ponytail ponytail-uninstall
 node ponytail-uninstall/scripts/uninstall.js
 ```
 

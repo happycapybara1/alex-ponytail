@@ -1,25 +1,25 @@
 {
-  "name": "ponytail",
+  "name": "alex-ponytail",
   "version": "5.5.0",
   "description": "Lazy senior dev mode. Forces the simplest, shortest solution that actually works: YAGNI, stdlib first, no unrequested abstractions.",
   "author": {
     "name": "Dietrich Gebert",
     "url": "https://github.com/DietrichGebert"
   },
-  "homepage": "https://github.com/happycapybara1/ponytail",
-  "repository": "https://github.com/happycapybara1/ponytail",
+  "homepage": "https://github.com/happycapybara1/alex-ponytail",
+  "repository": "https://github.com/happycapybara1/alex-ponytail",
   "license": "MIT",
   "keywords": ["yagni", "minimalism", "code-review", "productivity"],
   "skills": "./skills/",
   "hooks": "./hooks/claude-codex-hooks.json",
   "interface": {
-    "displayName": "Ponytail",
+    "displayName": "Alex Ponytail",
     "shortDescription": "Lazy senior developer mode",
     "longDescription": "Prefer YAGNI, the standard library, native platform features, and the smallest correct implementation.",
     "developerName": "Dietrich Gebert",
     "category": "Productivity",
     "capabilities": ["Instructions", "Lifecycle hooks"],
-    "websiteURL": "https://github.com/happycapybara1/ponytail",
+    "websiteURL": "https://github.com/happycapybara1/alex-ponytail",
     "defaultPrompt": [
       "Use Ponytail mode for this task.",
       "Review this diff for over-engineering.",

@@ -5,7 +5,7 @@
 // registers the /ponytail commands and skills. Reuses the shared instruction
 // builder in hooks/, so every host reads one source of truth.
 //
-// OpenCode runs it from a checkout of https://github.com/happycapybara1/ponytail
+// OpenCode runs it from a checkout of https://github.com/happycapybara1/alex-ponytail
 // (see INSTALL.md, "OpenCode"): opencode.json names the checkout's plugin dir,
 //   { "plugins": ["/path/to/ponytail/.opencode/plugins"] }
 // or, on OpenCode 1, this file: { "plugin": [".../.opencode/plugins/ponytail.mjs"] }
@@ -125,7 +125,7 @@ function withArguments(template, input) {
 }
 
 export default {
-  id: 'ponytail',
+  id: 'alex-ponytail',
 
   async setup(ctx) {
     const commands = readCommands();

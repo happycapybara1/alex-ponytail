@@ -1,5 +1,5 @@
 {
-  "name": "@dietrichgebert/ponytail",
+  "name": "alex-ponytail",
   "version": "5.5.0",
   "private": true,
   "description": "Lazy senior dev mode for AI agents. The best code is the code you never wrote.",
@@ -14,13 +14,13 @@
     "name": "Dietrich Gebert",
     "url": "https://github.com/DietrichGebert"
   },
-  "homepage": "https://github.com/happycapybara1/ponytail",
+  "homepage": "https://github.com/happycapybara1/alex-ponytail",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/happycapybara1/ponytail.git"
+    "url": "git+https://github.com/happycapybara1/alex-ponytail.git"
   },
   "bugs": {
-    "url": "https://github.com/happycapybara1/ponytail/issues"
+    "url": "https://github.com/happycapybara1/alex-ponytail/issues"
   },
   "main": "./.opencode/plugins/ponytail.mjs",
   "exports": {

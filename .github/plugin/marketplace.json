@@ -1,5 +1,5 @@
 {
-  "name": "ponytail",
+  "name": "alex-ponytail",
   "description": "Lazy senior dev mode for AI agents. The best code is the code you never wrote.",
   "owner": {
     "name": "Dietrich Gebert",
@@ -7,7 +7,7 @@
   },
   "plugins": [
     {
-      "name": "ponytail",
+      "name": "alex-ponytail",
       "description": "Forces the laziest solution that works. YAGNI, stdlib first, one line over fifty.",
       "source": "./",
       "category": "productivity",

@@ -28,7 +28,7 @@ The level lasts until you change it or the session ends. Off: say "stop ponytail
 | `/ponytail-debt` | List `shortcut:` comments as a debt ledger. |
 | `/ponytail-help` | This card. |
 
-In Codex, use `$ponytail:ponytail`, `$ponytail:ponytail-review` and so on.
+In Codex, use `$alex-ponytail:ponytail`, `$alex-ponytail:ponytail-review` and so on.
 
 ## Default level
 
@@ -36,6 +36,6 @@ In Codex, use `$ponytail:ponytail`, `$ponytail:ponytail-review` and so on.
 
 ## Update
 
-Claude Code: `/plugin marketplace update ponytail`, then `/reload-plugins`. To update automatically, open `/plugin`, go to Marketplaces, pick ponytail and enable auto-update. Other tools: see INSTALL.md.
+Claude Code: `/plugin marketplace update alex-ponytail`, then `/reload-plugins`. To update automatically, open `/plugin`, go to Marketplaces, pick alex-ponytail and enable auto-update. Other tools: see INSTALL.md.
 
-Docs: https://github.com/happycapybara1/ponytail
+Docs: https://github.com/happycapybara1/alex-ponytail

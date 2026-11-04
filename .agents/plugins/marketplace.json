@@ -1,14 +1,14 @@
 {
-  "name": "ponytail",
+  "name": "alex-ponytail",
   "interface": {
     "displayName": "Ponytail"
   },
   "plugins": [
     {
-      "name": "ponytail",
+      "name": "alex-ponytail",
       "source": {
         "source": "url",
-        "url": "https://github.com/happycapybara1/ponytail.git",
+        "url": "https://github.com/happycapybara1/alex-ponytail.git",
         "ref": "main"
       },
       "policy": {

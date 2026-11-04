@@ -49,7 +49,7 @@ test('plugin module exposes only the default export (regression guard for #631, 
 // rejects the V1 function shape outright, so this is the whole load contract.
 test('default export is a V2 definition with id + setup, and a V1 server()', () => {
   assert.equal(typeof loadPlugin, 'object', 'V2 needs an object, not the V1 plugin function');
-  assert.equal(loadPlugin.id, 'ponytail');
+  assert.equal(loadPlugin.id, 'alex-ponytail');
   assert.equal(typeof loadPlugin.setup, 'function');
   assert.equal(typeof loadPlugin.server, 'function', 'V1 OpenCode still calls server()');
 });
