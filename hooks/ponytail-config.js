@@ -53,9 +53,8 @@ function getClaudeDir() {
 
 function getDefaultMode() {
   // 1. Environment variable (highest priority)
-  // ponytail: a default must be a level (off/lite/full/ultra); review is a
-  // one-shot skill, never a default (#377). Normalize here so values with
-  // whitespace or mixed casing still resolve correctly.
+  // A default must be a level (off/lite/full/ultra); normalizeMode also
+  // accepts values with whitespace or mixed casing.
   const envMode = normalizeMode(process.env.PONYTAIL_DEFAULT_MODE);
   if (envMode) {
     return envMode;
@@ -79,7 +78,6 @@ function getDefaultMode() {
 }
 
 function writeDefaultMode(mode) {
-  // ponytail: only a level can be a default; review is a one-shot skill (#377).
   const normalized = normalizeMode(mode);
   if (!normalized) return null;
 

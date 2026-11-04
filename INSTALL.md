@@ -106,3 +106,5 @@ node ponytail-uninstall/scripts/uninstall.js
 ```
 
 Then delete the `ponytail-uninstall` folder.
+
+Versions before 5.5.0 could also leave `~/.claude/ponytail-statusline.sh` or `.ps1` and `~/.claude/.ponytail-statusline-nudged`. Delete those by hand, along with any `statusLine` entry in `~/.claude/settings.json` that points at them.
