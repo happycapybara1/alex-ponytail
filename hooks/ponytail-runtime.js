@@ -101,6 +101,7 @@ function writeHookOutput(event, mode, context = '') {
 
 module.exports = {
   isCodex,
+  isCopilot,
   readMode,
   setMode,
   writeHookOutput,

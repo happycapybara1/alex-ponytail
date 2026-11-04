@@ -51,7 +51,8 @@ function getClaudeDir() {
   return process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude');
 }
 
-function getDefaultMode() {
+// The default the user set (env var, then config file), or null when unset.
+function getConfiguredDefaultMode() {
   // 1. Environment variable (highest priority)
   // A default must be a level (off/lite/full/ultra); normalizeMode also
   // accepts values with whitespace or mixed casing.
@@ -72,9 +73,32 @@ function getDefaultMode() {
   } catch (e) {
     // Config file doesn't exist or is invalid — fall through
   }
+  return null;
+}
 
-  // 3. Default
-  return DEFAULT_MODE;
+function getDefaultMode() {
+  return getConfiguredDefaultMode() || DEFAULT_MODE;
+}
+
+// alex-ring asks the user before loading ponytail in Claude Code. It counts as
+// on when it is installed and the most specific settings file that names it
+// enables it (project local, then project, then user), as Claude Code resolves
+// enabledPlugins.
+function isRingActive(projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd()) {
+  const read = (file) => {
+    try { return fs.readFileSync(file, 'utf8'); } catch (e) { return ''; }
+  };
+  const claudeDir = getClaudeDir();
+  if (!read(path.join(claudeDir, 'plugins', 'installed_plugins.json')).includes('"alex-ring@')) return false;
+  for (const file of [
+    path.join(projectDir, '.claude', 'settings.local.json'),
+    path.join(projectDir, '.claude', 'settings.json'),
+    path.join(claudeDir, 'settings.json'),
+  ]) {
+    const match = read(file).match(/"alex-ring@[^"]*"\s*:\s*(true|false)/);
+    if (match) return match[1] === 'true';
+  }
+  return false;
 }
 
 function writeDefaultMode(mode) {
@@ -95,8 +119,10 @@ function writeDefaultMode(mode) {
 
 module.exports = {
   DEFAULT_MODE,
+  getConfiguredDefaultMode,
   getDefaultMode,
   getConfigPath,
+  isRingActive,
   getClaudeDir,
   normalizeMode,
   isDeactivationCommand,

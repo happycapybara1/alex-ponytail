@@ -5,9 +5,17 @@
 // ponytail-runtime.js) and emits the ponytail ruleset for that level as hidden
 // SessionStart context.
 
-const { getDefaultMode } = require('./ponytail-config');
+const { getConfiguredDefaultMode, getDefaultMode, isRingActive } = require('./ponytail-config');
 const { getPonytailInstructions } = require('./ponytail-instructions');
-const { readMode, setMode, writeHookOutput } = require('./ponytail-runtime');
+const { isCodex, isCopilot, readMode, setMode, writeHookOutput } = require('./ponytail-runtime');
+
+// With alex-ring on in Claude Code, a fresh session starts off: the ring asks
+// the user first, and loading the ponytail skill turns it on (see
+// ponytail-skill-tracker.js). A default level the user set still wins.
+function startMode() {
+  if (!isCodex && !isCopilot && !getConfiguredDefaultMode() && isRingActive()) return 'off';
+  return getDefaultMode();
+}
 
 function activate(mode) {
   try {
@@ -45,7 +53,7 @@ function finish() {
     // No payload, or an unparseable one: treat it as a fresh session
   }
   const continues = source === 'compact' || source === 'resume';
-  activate((continues && readMode()) || getDefaultMode());
+  activate((continues && readMode()) || startMode());
 }
 
 process.stdin.on('data', chunk => { input += chunk; });

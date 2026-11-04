@@ -85,6 +85,8 @@ The Gemini adapter intentionally does not ship a root `hooks/hooks.json`: Gemini
 
 Set the level for every new session with the `PONYTAIL_DEFAULT_MODE` env var (`lite`/`full`/`ultra`/`off`), or a `defaultMode` field in `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). The default is `full`.
 
+With [alex-ring](https://github.com/happycapybara1/alex-plugins) installed and enabled in Claude Code, a fresh session starts off unless you set a default level yourself: the ring asks you before the first coding reply, and its yes loads ponytail (subagents included). `/ponytail` works as always.
+
 While active, the ruleset is also injected into every subagent spawned via the Agent tool. To scope that to specific agent types (say, keep it off read-only search agents), set the `PONYTAIL_SUBAGENT_MATCHER` env var to a regex tested against the subagent's `agent_type`. It is unanchored and case-insensitive: `explore|general` matches either, `^general$` is exact, and plugin agent types look like `plugin:name`. Unset means inject into every subagent (the default); an invalid regex, or a subagent whose type the platform doesn't report, also falls back to injecting.
 
 ## Uninstall
