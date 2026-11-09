@@ -6,8 +6,8 @@
     "name": "Dietrich Gebert",
     "url": "https://github.com/DietrichGebert"
   },
-  "homepage": "https://github.com/happycapybara1/ponytail-alex",
-  "repository": "https://github.com/happycapybara1/ponytail-alex",
+  "homepage": "https://github.com/happycapybara1/alex-ponytail",
+  "repository": "https://github.com/happycapybara1/alex-ponytail",
   "license": "MIT",
   "keywords": ["yagni", "minimalism", "code-review", "productivity"],
   "commands": "commands/",

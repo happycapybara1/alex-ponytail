@@ -64,7 +64,7 @@ The whole thing is one prompt: [`skills/ponytail/SKILL.md`](skills/ponytail/SKIL
 **Claude Code** (CLI, desktop app or web), as two separate prompts:
 
 ```
-/plugin marketplace add happycapybara1/ponytail-alex
+/plugin marketplace add happycapybara1/alex-ponytail
 ```
 ```
 /plugin install alex-ponytail@alex-ponytail
@@ -73,7 +73,7 @@ The whole thing is one prompt: [`skills/ponytail/SKILL.md`](skills/ponytail/SKIL
 **Codex:**
 
 ```bash
-codex plugin marketplace add happycapybara1/ponytail-alex
+codex plugin marketplace add happycapybara1/alex-ponytail
 codex plugin add alex-ponytail@alex-ponytail
 ```
 

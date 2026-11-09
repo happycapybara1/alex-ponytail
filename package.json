@@ -14,13 +14,13 @@
     "name": "Dietrich Gebert",
     "url": "https://github.com/DietrichGebert"
   },
-  "homepage": "https://github.com/happycapybara1/ponytail-alex",
+  "homepage": "https://github.com/happycapybara1/alex-ponytail",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/happycapybara1/ponytail-alex.git"
+    "url": "git+https://github.com/happycapybara1/alex-ponytail.git"
   },
   "bugs": {
-    "url": "https://github.com/happycapybara1/ponytail-alex/issues"
+    "url": "https://github.com/happycapybara1/alex-ponytail/issues"
   },
   "main": "./.opencode/plugins/ponytail.mjs",
   "exports": {

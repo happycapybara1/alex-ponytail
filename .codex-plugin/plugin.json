@@ -6,8 +6,8 @@
     "name": "Dietrich Gebert",
     "url": "https://github.com/DietrichGebert"
   },
-  "homepage": "https://github.com/happycapybara1/ponytail-alex",
-  "repository": "https://github.com/happycapybara1/ponytail-alex",
+  "homepage": "https://github.com/happycapybara1/alex-ponytail",
+  "repository": "https://github.com/happycapybara1/alex-ponytail",
   "license": "MIT",
   "keywords": ["yagni", "minimalism", "code-review", "productivity"],
   "skills": "./skills/",
@@ -19,7 +19,7 @@
     "developerName": "Dietrich Gebert",
     "category": "Productivity",
     "capabilities": ["Instructions", "Lifecycle hooks"],
-    "websiteURL": "https://github.com/happycapybara1/ponytail-alex",
+    "websiteURL": "https://github.com/happycapybara1/alex-ponytail",
     "defaultPrompt": [
       "Use Ponytail mode for this task.",
       "Review this diff for over-engineering.",
