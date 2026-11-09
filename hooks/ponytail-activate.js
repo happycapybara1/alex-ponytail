@@ -9,7 +9,7 @@ const { getConfiguredDefaultMode, getDefaultMode, isRingActive } = require('./po
 const { getPonytailInstructions } = require('./ponytail-instructions');
 const { isCodex, isCopilot, readMode, setMode, writeHookOutput } = require('./ponytail-runtime');
 
-// With alex-ring on in Claude Code, a fresh session starts off: the ring asks
+// With the ring (alex-plugins-home) on in Claude Code, a fresh session starts off: the ring asks
 // the user first, and loading the ponytail skill turns it on (see
 // ponytail-skill-tracker.js). A default level the user set still wins.
 function startMode() {

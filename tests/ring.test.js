@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// alex-ring asks the user before loading ponytail in Claude Code. While the
+// The ring (alex-plugins-home) asks the user before loading ponytail in Claude Code. While the
 // ring is on, a fresh session starts off, and loading the ponytail skill turns
 // ponytail on (so subagents get the rules too).
 
@@ -18,13 +18,13 @@ function setup({ installed = true, user, local } = {}) {
   const project = path.join(root, 'project');
   fs.mkdirSync(path.join(claude, 'plugins'), { recursive: true });
   fs.mkdirSync(path.join(project, '.claude'), { recursive: true });
-  const plugins = installed ? { 'alex-ring@alex': [{ scope: 'user' }] } : {};
+  const plugins = installed ? { 'alex-plugins-home@alex': [{ scope: 'user' }] } : {};
   fs.writeFileSync(path.join(claude, 'plugins', 'installed_plugins.json'), JSON.stringify({ version: 2, plugins }));
   if (user !== undefined) {
-    fs.writeFileSync(path.join(claude, 'settings.json'), JSON.stringify({ enabledPlugins: { 'alex-ring@alex': user } }));
+    fs.writeFileSync(path.join(claude, 'settings.json'), JSON.stringify({ enabledPlugins: { 'alex-plugins-home@alex': user } }));
   }
   if (local !== undefined) {
-    fs.writeFileSync(path.join(project, '.claude', 'settings.local.json'), JSON.stringify({ enabledPlugins: { 'alex-ring@alex': local } }));
+    fs.writeFileSync(path.join(project, '.claude', 'settings.local.json'), JSON.stringify({ enabledPlugins: { 'alex-plugins-home@alex': local } }));
   }
   const env = { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot };
   Object.assign(env, {
@@ -75,6 +75,16 @@ test('ring disabled, off in this project, or not installed: ponytail starts as u
 test('ring on only in this project: ponytail waits there too', (t) => {
   const s = setup({ local: true });
   t.after(s.cleanup);
+  assert.equal(s.run('ponytail-activate.js', { source: 'startup' }).stdout, '');
+});
+
+test("the ring's old name (alex-ring) still counts", (t) => {
+  const s = setup({ user: true });
+  t.after(s.cleanup);
+  const claude = path.join(s.root, '.claude');
+  for (const file of [path.join(claude, 'plugins', 'installed_plugins.json'), path.join(claude, 'settings.json')]) {
+    fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace('alex-plugins-home@alex', 'alex-ring@alex'));
+  }
   assert.equal(s.run('ponytail-activate.js', { source: 'startup' }).stdout, '');
 });
 

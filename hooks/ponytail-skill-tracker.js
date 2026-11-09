@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ponytail — PostToolUse hook for Claude Code's Skill tool.
 //
-// When Claude loads the ponytail skill itself (for example after alex-ring's
+// When Claude loads the ponytail skill itself (for example after the ring's
 // yes), the skill's text brings the rules into the conversation, but nothing
 // recorded the level, so subagents got no rules. Record it here, exactly as
 // typing /ponytail would. Prints nothing.

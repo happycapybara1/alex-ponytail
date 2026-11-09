@@ -80,7 +80,8 @@ function getDefaultMode() {
   return getConfiguredDefaultMode() || DEFAULT_MODE;
 }
 
-// alex-ring asks the user before loading ponytail in Claude Code. It counts as
+// alex-plugins-home (the ring; formerly alex-ring) asks the user before loading
+// ponytail in Claude Code. It counts as
 // on when it is installed and the most specific settings file that names it
 // enables it (project local, then project, then user), as Claude Code resolves
 // enabledPlugins.
@@ -89,13 +90,14 @@ function isRingActive(projectDir = process.env.CLAUDE_PROJECT_DIR || process.cwd
     try { return fs.readFileSync(file, 'utf8'); } catch (e) { return ''; }
   };
   const claudeDir = getClaudeDir();
-  if (!read(path.join(claudeDir, 'plugins', 'installed_plugins.json')).includes('"alex-ring@')) return false;
+  const installed = read(path.join(claudeDir, 'plugins', 'installed_plugins.json'));
+  if (!installed.includes('"alex-plugins-home@') && !installed.includes('"alex-ring@')) return false;
   for (const file of [
     path.join(projectDir, '.claude', 'settings.local.json'),
     path.join(projectDir, '.claude', 'settings.json'),
     path.join(claudeDir, 'settings.json'),
   ]) {
-    const match = read(file).match(/"alex-ring@[^"]*"\s*:\s*(true|false)/);
+    const match = read(file).match(/"(?:alex-plugins-home|alex-ring)@[^"]*"\s*:\s*(true|false)/);
     if (match) return match[1] === 'true';
   }
   return false;
