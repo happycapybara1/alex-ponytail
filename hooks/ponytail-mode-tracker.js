@@ -14,11 +14,18 @@ const native = !isCodex && !isCopilot;
 // each as a paired tag block. Only the rest is what the user typed.
 const TAG_BLOCK = /<([A-Za-z][\w-]*)\b[^>]*>[\s\S]*?<\/\1\b[^>]*>/g;
 
+// Claude Code: a /ponytail command counts only as the whole typed text, the
+// command plus at most two words ("/ponytail", "/ponytail ultra", "/ponytail
+// default lite"). A brief from another chat can start with a command and go
+// on; that is not the user's command. Codex and Copilot keep the start check.
+const COMMAND = /^[/@$]ponytail(?:\s+[a-z]+){0,2}$/;
+
 // Claude Code: these words anywhere in the typed text turn ponytail off,
 // unless "not", "don't", "dont" or "never" comes before them in the same
-// sentence ("do not remove ponytail"). Codex and Copilot keep the
-// whole-message "stop ponytail" (isDeactivationCommand).
-const OFF_WORDS = /\b(?:(?:stop|remove|unload|disable|drop|deactivate)\s+(?:the\s+)?ponytail|turn\s+off\s+(?:the\s+)?ponytail|turn\s+ponytail\s+off|ponytail\s+(?:mode\s+)?off)\b/gi;
+// sentence ("do not remove ponytail"). A hyphen after "ponytail" makes it a
+// skill name ("remove ponytail-audit output"), not the mode. Codex and
+// Copilot keep the whole-message "stop ponytail" (isDeactivationCommand).
+const OFF_WORDS = /\b(?:(?:stop|remove|unload|disable|drop|deactivate)\s+(?:the\s+)?ponytail|turn\s+off\s+(?:the\s+)?ponytail|turn\s+ponytail\s+off|ponytail\s+(?:mode\s+)?off)(?![\w-])/gi;
 // A phone types "don't" with a curly apostrophe; it is the same word.
 const NEGATION = /\b(?:not|don['\u2019]?t|never)\b/i;
 
@@ -48,8 +55,8 @@ function finish() {
     // Claude Code: this chat's own record; the other hosts ignore the id.
     const sessionId = data.session_id;
 
-    // Match /ponytail commands
-    if (/^[/@$]ponytail/.test(prompt)) {
+    // Match /ponytail commands; other text goes on to the off-word check.
+    if (native ? COMMAND.test(prompt) : /^[/@$]ponytail/.test(prompt)) {
       const parts = prompt.split(/\s+/);
       const cmd = parts[0].replace(/^[@$]/, '/');
       const arg = parts[1] || '';

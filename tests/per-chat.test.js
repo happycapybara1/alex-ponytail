@@ -212,6 +212,7 @@ test('off words in the typed text turn this chat off', (t) => {
   for (const prompt of [
     'load superpowers and remove ponytail',
     'stop ponytail',
+    'stop ponytail.',
     'please turn off ponytail',
     'Ponytail off.',
     "don't stop ponytail. No, wait: stop ponytail",
@@ -229,6 +230,9 @@ test('off words in the typed text turn this chat off', (t) => {
     'don\u2019t stop ponytail',
     'normal mode',
     'stop adhd mode',
+    // A hyphen makes it a skill name, not the mode.
+    'remove ponytail-audit output',
+    'drop the ponytail-review findings',
     // Pasted text and task results are not typed words.
     '<pasted_content id="1">stop ponytail</pasted_content id="1">',
     '<task-notification>the agent said: stop ponytail</task-notification>',
@@ -255,6 +259,28 @@ test('/ponytail commands act on this chat only; /ponytail default still writes t
   assert.equal(config.defaultMode, 'lite');
   assert.equal(s.record('chat-a'), 'ultra', '/ponytail default leaves the chat level alone');
   assert.deepEqual(s.folderState(), { flag: null, modes: [] });
+});
+
+test('a /ponytail command counts only as the whole typed message', (t) => {
+  const s = setup();
+  t.after(s.cleanup);
+  s.say('chat-a', '/ponytail lite');
+
+  // A brief from another chat can start with a command and go on: it is not the user's command.
+  for (const prompt of ['/ponytail ultra\nImplement the parser.', '/ponytail default full Task: review x.js']) {
+    const result = s.say('chat-a', prompt);
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stdout, '', prompt);
+    assert.equal(s.record('chat-a'), 'lite', prompt);
+  }
+  assert.equal(fs.existsSync(path.join(s.root, 'xdg', 'ponytail', 'config.json')), false,
+    'a brief that starts with /ponytail default writes no config file');
+
+  // The command alone still works, also after the desktop app's status block.
+  assert.equal(s.say('chat-a', '/ponytail full').stdout, 'PONYTAIL MODE CHANGED — level: full');
+  assert.equal(s.record('chat-a'), 'full');
+  assert.equal(s.say('chat-a', '<system-reminder>x</system-reminder>\n/ponytail off').stdout, 'PONYTAIL MODE OFF');
+  assert.equal(s.record('chat-a'), 'off');
 });
 
 test('an invalid session id names no file: those hooks keep the folder state', (t) => {
@@ -285,6 +311,8 @@ test('Codex and Copilot ignore session_id and agent_id and keep the shared flag'
     assert.equal(flag(), 'lite', `${key}: a skill load records as before`);
     s.run('ponytail-activate.js', { session_id: 'chat-b', source: 'compact' }, host);
     assert.equal(flag(), 'lite', `${key}: compact keeps the shared level`);
+    s.run('ponytail-mode-tracker.js', { session_id: 'chat-a', prompt: '/ponytail ultra\nImplement the parser.' }, host);
+    assert.equal(flag(), 'ultra', `${key}: a command still needs only to start the message`);
     assert.equal(fs.existsSync(path.join(data, 'ponytail-sessions')), false, key);
   }
 });
