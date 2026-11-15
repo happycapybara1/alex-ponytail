@@ -18,11 +18,14 @@ function removeIfExists(filePath, label) {
   }
 }
 
-removeIfExists(path.join(getClaudeDir(), '.ponytail-active'), 'mode flag');
-const modesDir = path.join(getClaudeDir(), 'ponytail-modes');
-if (fs.existsSync(modesDir)) {
-  fs.rmSync(modesDir, { recursive: true });
-  console.log(`Removed per-project mode flags: ${modesDir}`);
+function removeDirIfExists(dirPath, label) {
+  if (!fs.existsSync(dirPath)) return;
+  fs.rmSync(dirPath, { recursive: true });
+  console.log(`Removed ${label}: ${dirPath}`);
 }
+
+removeIfExists(path.join(getClaudeDir(), '.ponytail-active'), 'mode flag');
+removeDirIfExists(path.join(getClaudeDir(), 'ponytail-modes'), 'per-project mode flags');
+removeDirIfExists(path.join(getClaudeDir(), 'ponytail-sessions'), 'per-chat mode records');
 removeIfExists(path.join(process.env.XDG_CONFIG_HOME || path.join(os.homedir(), '.config'), 'opencode', '.ponytail-active'), 'OpenCode mode flag');
 removeIfExists(getConfigPath(), 'config file');

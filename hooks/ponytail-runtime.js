@@ -27,11 +27,9 @@ if (isCopilot) stateDir = process.env.COPILOT_PLUGIN_DATA || getClaudeDir();
 
 const statePath = path.join(stateDir, STATE_FILE);
 
-// Claude Code hands every hook its project dir, so the live mode is kept per
-// project and concurrent sessions in different repos stop overwriting each other
-// (#662, #809). Hosts without it keep the single shared flag.
-// ponytail: sessions in the SAME repo still share one mode (last write wins);
-// key by session_id if that matters.
+// Without a chat record (below), the live mode is kept per project when the
+// host passes its project dir, so sessions in different repos stop overwriting
+// each other (#662, #809). Hosts without it keep the single shared flag.
 const projectDir = (process.env.CLAUDE_PROJECT_DIR || '').trim();
 // Replacing separators with '_' aliases e.g. /work/a/b and /work/a_b (#662).
 // Do not read old sanitized keys: they cannot be assigned to one project safely.
@@ -40,10 +38,30 @@ const projectStatePath = projectDir
     createHash('sha256').update(path.normalize(projectDir)).digest('hex'))
   : null;
 
-// The shared flag is still written, for hooks that run without a project dir.
+// Claude Code gives every hook the chat's session_id (a subagent gets its
+// parent chat's), so each chat keeps its own record: another chat in the same
+// folder, a new chat or /clear never changes it. The id becomes a file name,
+// so only a plain id counts. Codex and Copilot keep the files above.
+const SESSION_ID = /^[A-Za-z0-9_-]{1,128}$/;
+
+function isSessionId(id) {
+  return typeof id === 'string' && SESSION_ID.test(id);
+}
+
+// shortcut: chat records are never pruned (a few bytes each; uninstall removes
+// them), prune old ones if ponytail-sessions/ ever grows large.
+function sessionStatePath(sessionId) {
+  return !isCodex && !isCopilot && isSessionId(sessionId)
+    ? path.join(stateDir, 'ponytail-sessions', sessionId)
+    : null;
+}
+
+// A chat with its own record writes only that. Otherwise the shared flag is
+// still written, for hooks that run without a project dir.
 // "off" is written like any level, so a compacted or resumed session stays off.
-function setMode(mode) {
-  for (const file of [projectStatePath, statePath]) {
+function setMode(mode, sessionId) {
+  const own = sessionStatePath(sessionId);
+  for (const file of own ? [own] : [projectStatePath, statePath]) {
     if (!file) continue;
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, mode);
@@ -51,9 +69,9 @@ function setMode(mode) {
 }
 
 // Live mode written by activate/mode-tracker; null when nothing is recorded.
-function readMode() {
+function readMode(sessionId) {
   try {
-    return fs.readFileSync(projectStatePath || statePath, 'utf8').trim() || null;
+    return fs.readFileSync(sessionStatePath(sessionId) || projectStatePath || statePath, 'utf8').trim() || null;
   } catch (e) {
     return null;
   }
@@ -102,6 +120,7 @@ function writeHookOutput(event, mode, context = '') {
 module.exports = {
   isCodex,
   isCopilot,
+  isSessionId,
   readMode,
   setMode,
   writeHookOutput,

@@ -360,14 +360,16 @@ assert.deepEqual(output, {});
 
 // SubagentStart hook: when ponytail mode is active it injects the ruleset into
 // each subagent (issue #252). Native Claude must get the hookSpecificOutput JSON
-// form, not raw stdout, or the context is dropped.
+// form, not raw stdout, or the context is dropped. In Claude Code a subagent gets
+// its parent chat's session_id, and only that chat's record counts.
 const subHome = path.join(temp, 'sub-home');
-const subFlag = path.join(subHome, '.claude', '.ponytail-active');
-fs.mkdirSync(path.dirname(subFlag), { recursive: true });
+const subRecord = path.join(subHome, '.claude', 'ponytail-sessions', 'chat-1');
+fs.mkdirSync(path.dirname(subRecord), { recursive: true });
 const subEnv = { HOME: subHome, USERPROFILE: subHome };
+const subChat = JSON.stringify({ session_id: 'chat-1' });
 
-fs.writeFileSync(subFlag, 'full');
-result = run('ponytail-subagent.js', subEnv);
+fs.writeFileSync(subRecord, 'full');
+result = run('ponytail-subagent.js', subEnv, subChat);
 assert.equal(result.status, 0, result.stderr);
 output = JSON.parse(result.stdout);
 assert.equal(output.hookSpecificOutput.hookEventName, 'SubagentStart');
@@ -376,9 +378,9 @@ assert.match(
   /PONYTAIL MODE ACTIVE — level: full/,
 );
 
-// No flag → ponytail off → inject nothing (empty stdout, no failure).
-fs.unlinkSync(subFlag);
-result = run('ponytail-subagent.js', subEnv);
+// No record → ponytail off → inject nothing (empty stdout, no failure).
+fs.unlinkSync(subRecord);
+result = run('ponytail-subagent.js', subEnv, subChat);
 assert.equal(result.status, 0, result.stderr);
 assert.equal(result.stdout, '', 'SubagentStart must stay silent when ponytail is off');
 
@@ -400,16 +402,18 @@ assert.match(output.hookSpecificOutput.additionalContext, /PONYTAIL MODE ACTIVE 
 // inject-into-every-subagent behavior asserted above. The matcher is
 // case-insensitive and unanchored, and every uncertain case fails open.
 const scopeHome = path.join(temp, 'scope-home');
-const scopeFlag = path.join(scopeHome, '.claude', '.ponytail-active');
-fs.mkdirSync(path.dirname(scopeFlag), { recursive: true });
-fs.writeFileSync(scopeFlag, 'full');
+const scopeRecord = path.join(scopeHome, '.claude', 'ponytail-sessions', 'chat-1');
+fs.mkdirSync(path.dirname(scopeRecord), { recursive: true });
+fs.writeFileSync(scopeRecord, 'full');
 const scopeEnv = { HOME: scopeHome, USERPROFILE: scopeHome };
+// The SubagentStart input of a subagent in the chat whose record is on.
+const inChat = (fields) => JSON.stringify({ session_id: 'chat-1', ...fields });
 
 // Matching agent_type → inject; the match is case-insensitive.
 result = run(
   'ponytail-subagent.js',
   { ...scopeEnv, PONYTAIL_SUBAGENT_MATCHER: 'general|plan' },
-  JSON.stringify({ agent_type: 'General-purpose' }),
+  inChat({ agent_type: 'General-purpose' }),
 );
 assert.equal(result.status, 0, result.stderr);
 output = JSON.parse(result.stdout);
@@ -420,7 +424,7 @@ assert.match(output.hookSpecificOutput.additionalContext, /PONYTAIL MODE ACTIVE 
 result = run(
   'ponytail-subagent.js',
   { ...scopeEnv, PONYTAIL_SUBAGENT_MATCHER: 'general|plan' },
-  JSON.stringify({ agent_type: 'Explore' }),
+  inChat({ agent_type: 'Explore' }),
 );
 assert.equal(result.status, 0, result.stderr);
 assert.equal(result.stdout, '', 'a non-matching agent_type must skip the injection');
@@ -429,7 +433,7 @@ assert.equal(result.stdout, '', 'a non-matching agent_type must skip the injecti
 result = run(
   'ponytail-subagent.js',
   { ...scopeEnv, PONYTAIL_SUBAGENT_MATCHER: '^general$' },
-  JSON.stringify({ agent_type: 'general-purpose' }),
+  inChat({ agent_type: 'general-purpose' }),
 );
 assert.equal(result.status, 0, result.stderr);
 assert.equal(result.stdout, '', 'an anchored matcher must not match a superset agent_type');
@@ -439,7 +443,7 @@ assert.equal(result.stdout, '', 'an anchored matcher must not match a superset a
 result = run(
   'ponytail-subagent.js',
   { ...scopeEnv, PONYTAIL_SUBAGENT_MATCHER: 'general' },
-  JSON.stringify({}),
+  inChat({}),
 );
 assert.equal(result.status, 0, result.stderr);
 output = JSON.parse(result.stdout);
@@ -449,7 +453,7 @@ assert.match(output.hookSpecificOutput.additionalContext, /PONYTAIL MODE ACTIVE 
 result = run(
   'ponytail-subagent.js',
   { ...scopeEnv, PONYTAIL_SUBAGENT_MATCHER: '(' },
-  JSON.stringify({ agent_type: 'anything' }),
+  inChat({ agent_type: 'anything' }),
 );
 assert.equal(result.status, 0, result.stderr);
 output = JSON.parse(result.stdout);
@@ -460,16 +464,17 @@ assert.equal(output.hookSpecificOutput.hookEventName, 'SubagentStart');
 result = run(
   'ponytail-subagent.js',
   { ...scopeEnv, PONYTAIL_SUBAGENT_MATCHER: '(a+)+$' },
-  JSON.stringify({ agent_type: 'a'.repeat(40) + '!' }),
+  inChat({ agent_type: 'a'.repeat(40) + '!' }),
 );
 assert.equal(result.status, 0, result.stderr);
 output = JSON.parse(result.stdout);
 assert.match(output.hookSpecificOutput.additionalContext, /PONYTAIL MODE ACTIVE — level: full/);
 
-// The default (no matcher) path must not depend on stdin: even with stdin
-// closed empty it injects synchronously, preserving the #252 behavior on
-// Windows where the piped JSON can be swallowed (#443).
-result = run('ponytail-subagent.js', scopeEnv, '');
+// On the other hosts the default (no matcher) path must not depend on stdin:
+// even with stdin closed empty it injects synchronously, preserving the #252
+// behavior on Windows where the piped JSON can be swallowed (#443). Claude Code
+// must read stdin for the chat's session_id instead (see per-chat.test.js).
+result = run('ponytail-subagent.js', { ...scopeEnv, PLUGIN_DATA: subCodex }, '');
 assert.equal(result.status, 0, result.stderr);
 output = JSON.parse(result.stdout);
 assert.match(output.hookSpecificOutput.additionalContext, /PONYTAIL MODE ACTIVE — level: full/);
@@ -644,31 +649,36 @@ assert.equal(
 );
 
 // #662/#809: two Claude Code sessions in different repos keep their own mode.
+// Hooks without a session id (input that never arrived) still keep it per
+// project; with one, each chat keeps its own (see per-chat.test.js).
 {
   const projHome = path.join(temp, 'per-project-home');
   fs.mkdirSync(projHome, { recursive: true });
   const repoA = { HOME: projHome, USERPROFILE: projHome, CLAUDE_PROJECT_DIR: '/work/repo-a' };
   const repoB = { HOME: projHome, USERPROFILE: projHome, CLAUDE_PROJECT_DIR: '/work/repo-b' };
-  const subagentLevel = (env) => {
-    const r = run('ponytail-subagent.js', env);
+  // The live level as the runtime reads it without a session id; null when off.
+  const liveLevel = (env) => {
+    const r = spawnSync(process.execPath, [
+      '-e', 'process.stdout.write(String(require(process.argv[1]).readMode()))',
+      path.join(root, 'hooks', 'ponytail-runtime.js'),
+    ], { env: { ...process.env, ...isolated, ...env }, encoding: 'utf8' });
     assert.equal(r.status, 0, r.stderr);
-    if (!r.stdout) return null;
-    return JSON.parse(r.stdout).hookSpecificOutput.additionalContext.match(/level: (\w+)/)[1];
+    return r.stdout === 'null' || r.stdout === 'off' ? null : r.stdout;
   };
 
   run('ponytail-activate.js', repoA);
   run('ponytail-activate.js', { ...repoB, PONYTAIL_DEFAULT_MODE: 'off' });
-  assert.equal(subagentLevel(repoA), 'full', 'an off session in repo B must not clear repo A');
-  assert.equal(subagentLevel(repoB), null, 'repo B is off');
+  assert.equal(liveLevel(repoA), 'full', 'an off session in repo B must not clear repo A');
+  assert.equal(liveLevel(repoB), null, 'repo B is off');
 
   run('ponytail-mode-tracker.js', repoA, JSON.stringify({ prompt: '/ponytail ultra' }));
   run('ponytail-mode-tracker.js', repoB, JSON.stringify({ prompt: '/ponytail lite' }));
-  assert.equal(subagentLevel(repoA), 'ultra');
-  assert.equal(subagentLevel(repoB), 'lite');
+  assert.equal(liveLevel(repoA), 'ultra');
+  assert.equal(liveLevel(repoB), 'lite');
 
   run('ponytail-mode-tracker.js', repoB, JSON.stringify({ prompt: '/ponytail off' }));
-  assert.equal(subagentLevel(repoB), null, '/ponytail off works in repo B');
-  assert.equal(subagentLevel(repoA), 'ultra', '/ponytail off in repo B leaves repo A alone');
+  assert.equal(liveLevel(repoB), null, '/ponytail off works in repo B');
+  assert.equal(liveLevel(repoA), 'ultra', '/ponytail off in repo B leaves repo A alone');
 
   // Paths with a directory separator and an underscore must not share a mode.
   const nested = path.join(temp, 'project', 'nested');
@@ -679,14 +689,14 @@ assert.equal(
   const siblingEnv = { HOME: projHome, USERPROFILE: projHome, CLAUDE_PROJECT_DIR: sibling };
   run('ponytail-activate.js', { ...nestedEnv, PONYTAIL_DEFAULT_MODE: 'ultra' });
   if (process.platform === 'win32') {
-    assert.equal(subagentLevel({ ...nestedEnv, CLAUDE_PROJECT_DIR: nested.replace(/\\/g, '/') }), 'ultra',
+    assert.equal(liveLevel({ ...nestedEnv, CLAUDE_PROJECT_DIR: nested.replace(/\\/g, '/') }), 'ultra',
       'alternate path separators still identify the same project');
   }
   run('ponytail-activate.js', { ...siblingEnv, PONYTAIL_DEFAULT_MODE: 'off' });
-  assert.equal(subagentLevel(nestedEnv), 'ultra', 'an off sibling must not clear the nested project');
+  assert.equal(liveLevel(nestedEnv), 'ultra', 'an off sibling must not clear the nested project');
   run('ponytail-mode-tracker.js', siblingEnv, JSON.stringify({ prompt: '/ponytail lite' }));
-  assert.equal(subagentLevel(nestedEnv), 'ultra', 'a sibling mode switch must not change the nested project');
-  assert.equal(subagentLevel(siblingEnv), 'lite');
+  assert.equal(liveLevel(nestedEnv), 'ultra', 'a sibling mode switch must not change the nested project');
+  assert.equal(liveLevel(siblingEnv), 'lite');
 }
 
 // #639: bare /ponytail switches ponytail on when it is off, and only reports

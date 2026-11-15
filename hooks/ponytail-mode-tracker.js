@@ -1,11 +1,35 @@
 #!/usr/bin/env node
 // ponytail — UserPromptSubmit hook to track which ponytail mode is active
-// Inspects user input for /ponytail commands and "stop ponytail" and writes the
-// mode to the flag file
+// Inspects user input for /ponytail commands and off words ("stop ponytail")
+// and records the mode (per chat in Claude Code, see ponytail-runtime.js)
 
 const { getDefaultMode, isDeactivationCommand, writeDefaultMode } = require('./ponytail-config');
-const { isCodex, readMode, setMode, writeHookOutput } = require('./ponytail-runtime');
+const { isCodex, isCopilot, readMode, setMode, writeHookOutput } = require('./ponytail-runtime');
 const { getPonytailInstructions } = require('./ponytail-instructions');
+
+const native = !isCodex && !isCopilot;
+
+// Claude Code can put text the user did not type into `prompt`: the desktop
+// app's status block before the typed words, task results and pasted text,
+// each as a paired tag block. Only the rest is what the user typed.
+const TAG_BLOCK = /<([A-Za-z][\w-]*)\b[^>]*>[\s\S]*?<\/\1\b[^>]*>/g;
+
+// Claude Code: these words anywhere in the typed text turn ponytail off,
+// unless "not", "don't", "dont" or "never" comes before them in the same
+// sentence ("do not remove ponytail"). Codex and Copilot keep the
+// whole-message "stop ponytail" (isDeactivationCommand).
+const OFF_WORDS = /\b(?:(?:stop|remove|unload|disable|drop|deactivate)\s+(?:the\s+)?ponytail|turn\s+off\s+(?:the\s+)?ponytail|turn\s+ponytail\s+off|ponytail\s+(?:mode\s+)?off)\b/gi;
+// A phone types "don't" with a curly apostrophe; it is the same word.
+const NEGATION = /\b(?:not|don['\u2019]?t|never)\b/i;
+
+function saysOff(text) {
+  // Every match counts: "don't stop ponytail. no, wait: stop ponytail" is off.
+  for (const match of text.matchAll(OFF_WORDS)) {
+    const sentence = text.slice(0, match.index).split(/[.!?\r\n]/).pop();
+    if (!NEGATION.test(sentence)) return true;
+  }
+  return false;
+}
 
 let input = '';
 let done = false;
@@ -16,9 +40,13 @@ function finish() {
   try {
     // Strip UTF-8 BOM some shells prepend when piping (breaks JSON.parse)
     const data = JSON.parse(input.replace(/^\uFEFF/, ''));
+    let typed = data.prompt || '';
+    if (native) typed = typed.replace(TAG_BLOCK, '');
     // A plugin-namespaced command (/alex-ponytail:ponytail-review) is the same command.
-    const prompt = (data.prompt || '').trim().toLowerCase()
+    const prompt = typed.trim().toLowerCase()
       .replace(/^([/@$])(?:alex-)?ponytail:(?=ponytail)/, '$1');
+    // Claude Code: this chat's own record; the other hosts ignore the id.
+    const sessionId = data.session_id;
 
     // Match /ponytail commands
     if (/^[/@$]ponytail/.test(prompt)) {
@@ -50,7 +78,7 @@ function finish() {
         else if (arg === '') {
           // Bare /ponytail switches ponytail on: off → the default level (full if
           // the default is off too); already on → keep the level, report it (#639).
-          const live = readMode();
+          const live = readMode(sessionId);
           if (live && live !== 'off') {
             isReportOnly = true;
             mode = live;
@@ -63,7 +91,7 @@ function finish() {
       if (isReportOnly) {
         writeHookOutput('UserPromptSubmit', mode, 'PONYTAIL MODE ACTIVE — level: ' + mode);
       } else if (mode && mode !== 'off') {
-        setMode(mode);
+        setMode(mode, sessionId);
         // Codex has no /ponytail command that would load the skill body for the
         // new level, and the SessionStart ruleset is filtered to the start level,
         // so the tracker delivers that level's ruleset along with the confirmation.
@@ -74,11 +102,11 @@ function finish() {
           isCodex ? header + '\n\n' + getPonytailInstructions(mode) : header,
         );
       } else if (mode === 'off') {
-        setMode('off');
+        setMode('off', sessionId);
         writeHookOutput('UserPromptSubmit', 'off', 'PONYTAIL MODE OFF');
       }
-    } else if (isDeactivationCommand(prompt)) {
-      setMode('off');
+    } else if (native ? saysOff(prompt) : isDeactivationCommand(prompt)) {
+      setMode('off', sessionId);
       writeHookOutput('UserPromptSubmit', 'off', 'PONYTAIL MODE OFF');
     }
   } catch (e) {

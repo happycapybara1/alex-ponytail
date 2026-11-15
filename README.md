@@ -81,7 +81,7 @@ Then open `/hooks` in Codex, trust its two lifecycle hooks, and start a new thre
 
 **GitHub Copilot, OpenCode and Gemini CLI:** see [INSTALL.md](INSTALL.md).
 
-It is on in every session at the `full` level. Turn it off with "stop ponytail" or `/ponytail off`.
+It is on in every session at the `full` level. Turn it off with "stop ponytail" or `/ponytail off`. Claude Code keeps the level per chat (session); the other hosts keep it per project, or one level for all sessions when the host does not pass its project folder.
 
 ## Commands
 

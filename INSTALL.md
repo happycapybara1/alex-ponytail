@@ -87,6 +87,8 @@ Set the level for every new session with the `PONYTAIL_DEFAULT_MODE` env var (`l
 
 With [alex-plugins-home](https://github.com/happycapybara1/alex-plugins-home) installed and enabled in Claude Code, a fresh session starts off unless you set a default level yourself: the ring asks you before the first coding reply, and its yes loads ponytail (subagents included). `/ponytail` works as always.
 
+Claude Code keeps the level per chat (session): a switch, "stop ponytail" or the ring's yes in one chat leaves your other chats as they are, also in the same project. The other hosts keep it per project, or one level for all sessions when the host does not pass its project folder.
+
 While active, the ruleset is also injected into every subagent spawned via the Agent tool. To scope that to specific agent types (say, keep it off read-only search agents), set the `PONYTAIL_SUBAGENT_MATCHER` env var to a regex tested against the subagent's `agent_type`. It is unanchored and case-insensitive: `explore|general` matches either, `^general$` is exact, and plugin agent types look like `plugin:name`. Unset means inject into every subagent (the default); an invalid regex, or a subagent whose type the platform doesn't report, also falls back to injecting.
 
 ## Uninstall
@@ -100,7 +102,7 @@ While active, the ruleset is also injected into every subagent spawned via the A
 | OpenCode | Remove the `plugins` entry, then delete the checkout |
 | Copilot Chat | Delete the copied `.github/copilot-instructions.md` |
 
-These remove the plugin's own files. Ponytail also keeps a little state outside the plugin folder: its mode flags (such as `~/.claude/.ponytail-active`) and, if you made one, `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). To remove those too, run the uninstall script from a fresh checkout, before or after the commands above:
+These remove the plugin's own files. Ponytail also keeps a little state outside the plugin folder: its mode flags (in Claude Code one per chat in `~/.claude/ponytail-sessions/`, and others such as `~/.claude/.ponytail-active`) and, if you made one, `~/.config/ponytail/config.json` (`%APPDATA%\ponytail\config.json` on Windows). To remove those too, run the uninstall script from a fresh checkout, before or after the commands above:
 
 ```bash
 git clone --depth 1 https://github.com/happycapybara1/alex-ponytail ponytail-uninstall

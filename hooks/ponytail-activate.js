@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ponytail — SessionStart activation hook for Claude Code, Codex and Copilot.
 //
-// Runs on every session start: records the level in the mode flag (see
+// Runs on every session start: records the level (per chat in Claude Code, see
 // ponytail-runtime.js) and emits the ponytail ruleset for that level as hidden
 // SessionStart context.
 
@@ -17,9 +17,9 @@ function startMode() {
   return getDefaultMode();
 }
 
-function activate(mode) {
+function activate(mode, sessionId) {
   try {
-    setMode(mode);
+    setMode(mode, sessionId);
   } catch (e) {
     // Silent fail -- flag is best-effort, don't block the hook
   }
@@ -38,22 +38,23 @@ function activate(mode) {
 // nothing recorded, e.g. a resume on a fresh machine or container, they start at
 // the default like startup and clear. Claude Code, Codex and Copilot CLI pass
 // the trigger as `source` on stdin; reading it there keeps the hook entry, and
-// the trust Codex gave it, unchanged.
+// the trust Codex gave it, unchanged. Claude Code also passes `session_id`, so
+// each chat reads and records only its own level (see ponytail-runtime.js).
 let input = '';
 let done = false;
 
 function finish() {
   if (done) return;
   done = true;
-  let source = '';
+  let data = {};
   try {
     // Strip UTF-8 BOM some shells prepend when piping (breaks JSON.parse)
-    source = JSON.parse(input.replace(/^﻿/, '')).source;
+    data = JSON.parse(input.replace(/^﻿/, '')) || {};
   } catch (e) {
     // No payload, or an unparseable one: treat it as a fresh session
   }
-  const continues = source === 'compact' || source === 'resume';
-  activate((continues && readMode()) || startMode());
+  const continues = data.source === 'compact' || data.source === 'resume';
+  activate((continues && readMode(data.session_id)) || startMode(), data.session_id);
 }
 
 process.stdin.on('data', chunk => { input += chunk; });

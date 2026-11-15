@@ -7,7 +7,7 @@
 // typing /ponytail would. Prints nothing.
 
 const { getDefaultMode, normalizeMode } = require('./ponytail-config');
-const { readMode, setMode } = require('./ponytail-runtime');
+const { isCodex, isCopilot, readMode, setMode } = require('./ponytail-runtime');
 
 let input = '';
 let done = false;
@@ -17,14 +17,18 @@ function finish() {
   done = true;
   try {
     const data = JSON.parse(input.replace(/^﻿/, ''));
+    // In Claude Code a subagent's hook input has agent_id and the parent chat's
+    // session_id: a subagent's skill load must not turn the parent chat on.
+    if (!isCodex && !isCopilot && data.agent_id) return;
     const toolInput = data.tool_input || {};
     const skill = String(toolInput.skill || '').trim().toLowerCase();
     // The mode itself (ponytail or <plugin>:ponytail), not ponytail-review etc.
     if (!/^(?:[\w.-]+:)?ponytail$/.test(skill)) return;
     const arg = normalizeMode(String(toolInput.args || '').trim().split(/\s+/)[0]);
-    const live = readMode();
+    // Claude Code: only the calling chat's own record (see ponytail-runtime.js).
+    const live = readMode(data.session_id);
     const fallback = getDefaultMode() === 'off' ? 'full' : getDefaultMode();
-    setMode(arg || (live && live !== 'off' ? live : fallback));
+    setMode(arg || (live && live !== 'off' ? live : fallback), data.session_id);
   } catch (e) {
     // Best effort: never block a tool call
   }

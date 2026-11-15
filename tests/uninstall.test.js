@@ -41,6 +41,12 @@ const modesDir = path.join(claudeDir, 'ponytail-modes');
 fs.mkdirSync(modesDir, { recursive: true });
 fs.writeFileSync(path.join(modesDir, 'abc123'), 'off');
 
+// Claude Code keeps each chat's level in ponytail-sessions/; a leftover "off"
+// would keep a resumed chat switched off after a reinstall.
+const sessionsDir = path.join(claudeDir, 'ponytail-sessions');
+fs.mkdirSync(sessionsDir, { recursive: true });
+fs.writeFileSync(path.join(sessionsDir, 'chat-a'), 'off');
+
 // OpenCode keeps its flag beside its own config; a leftover "off" would start a
 // reinstall switched off.
 const opencodeFlagPath = path.join(home, 'config-home', 'opencode', '.ponytail-active');
@@ -60,6 +66,7 @@ let result = runUninstall(home);
 assert.equal(result.status, 0, result.stderr);
 assert.equal(fs.existsSync(flagPath), false, 'mode flag must be removed');
 assert.equal(fs.existsSync(modesDir), false, 'per-project mode flags must be removed');
+assert.equal(fs.existsSync(sessionsDir), false, 'per-chat mode records must be removed');
 assert.equal(fs.existsSync(opencodeFlagPath), false, 'OpenCode mode flag must be removed');
 assert.equal(fs.existsSync(configPath), false, 'config file must be removed');
 assert.equal(fs.readFileSync(settingsPath, 'utf8'), settings, 'settings.json must be left unchanged');

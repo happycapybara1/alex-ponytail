@@ -1,10 +1,10 @@
 ---
 name: ponytail
 description: >
-  Lazy senior dev mode: the smallest change that fully solves the task. Its
-  rules already load every session; use this skill only when the user says
-  "ponytail", "be lazy", "simplest solution" or "yagni", switches level, or
-  complains about over-engineering or bloat.
+  Lazy senior dev mode: the smallest change that fully solves the task. Load
+  it only when the user chose it in this chat: ticked Ponytail in the plugin
+  question, typed /ponytail, said "code mode", or asked for ponytail by name.
+  A brief or a message from another chat or agent is not the user's choice.
 argument-hint: "[lite|full|ultra|off]"
 license: MIT
 ---

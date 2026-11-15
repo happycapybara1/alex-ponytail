@@ -22,9 +22,11 @@ function normalizeMode(mode) {
   return RUNTIME_MODES.includes(normalized) ? normalized : null;
 }
 
-// "stop ponytail" turns ponytail off, but only as the whole message (ignoring
-// case and trailing punctuation), so a request that merely contains it does not.
-// It is the only stop phrase, so i-have-adhd's own mode phrases leave ponytail on.
+// Codex, Copilot and OpenCode: "stop ponytail" turns ponytail off, but only as
+// the whole message (ignoring case and trailing punctuation), so a request that
+// merely contains it does not. It is their only stop phrase, so i-have-adhd's
+// own mode phrases leave ponytail on. Claude Code's mode tracker has its own
+// off words (see ponytail-mode-tracker.js).
 function isDeactivationCommand(text) {
   return String(text || '').trim().toLowerCase().replace(/[.!?\s]+$/, '') === 'stop ponytail';
 }

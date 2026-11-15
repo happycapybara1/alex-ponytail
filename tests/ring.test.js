@@ -42,7 +42,9 @@ function setup({ installed = true, user, local } = {}) {
     timeout: 10000,
   });
   const flag = () => fs.readFileSync(path.join(claude, '.ponytail-active'), 'utf8');
-  return { root, run, flag, cleanup: () => fs.rmSync(root, { recursive: true, force: true }) };
+  // A chat's own level, kept by its session_id (see per-chat.test.js).
+  const record = (id) => fs.readFileSync(path.join(claude, 'ponytail-sessions', id), 'utf8');
+  return { root, run, flag, record, cleanup: () => fs.rmSync(root, { recursive: true, force: true }) };
 }
 
 const skillCall = (skill, args) => ({ hook_event_name: 'PostToolUse', tool_name: 'Skill', tool_input: { skill, args } });
@@ -98,15 +100,17 @@ test('the ring is Claude Code only: Codex starts as usual', (t) => {
 test('loading the ponytail skill turns ponytail on for this session and its subagents', (t) => {
   const s = setup({ user: true });
   t.after(s.cleanup);
-  s.run('ponytail-activate.js', { source: 'startup' });
-  assert.equal(s.run('ponytail-subagent.js', { agent_type: 'general-purpose' }).stdout, '', 'off before the yes');
-  const result = s.run('ponytail-skill-tracker.js', skillCall('alex-ponytail:ponytail'));
+  // Claude Code names the chat in every hook input; a subagent gets its parent chat's id.
+  const chat = { session_id: 'chat-a' };
+  s.run('ponytail-activate.js', { source: 'startup', ...chat });
+  assert.equal(s.run('ponytail-subagent.js', { agent_type: 'general-purpose', ...chat }).stdout, '', 'off before the yes');
+  const result = s.run('ponytail-skill-tracker.js', { ...skillCall('alex-ponytail:ponytail'), ...chat });
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.stdout, '', 'the skill text carries the rules; the hook adds nothing');
-  assert.equal(s.flag(), 'full');
-  assert.match(s.run('ponytail-subagent.js', { agent_type: 'general-purpose' }).stdout, /PONYTAIL MODE ACTIVE — level: full/);
+  assert.equal(s.record('chat-a'), 'full');
+  assert.match(s.run('ponytail-subagent.js', { agent_type: 'general-purpose', ...chat }).stdout, /PONYTAIL MODE ACTIVE — level: full/);
   // A compaction keeps the level the yes recorded.
-  assert.match(s.run('ponytail-activate.js', { source: 'compact' }).stdout, /level: full/);
+  assert.match(s.run('ponytail-activate.js', { source: 'compact', ...chat }).stdout, /level: full/);
 });
 
 test('the skill hook honors a level argument and ignores the other ponytail skills', (t) => {
