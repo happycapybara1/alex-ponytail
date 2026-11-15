@@ -67,6 +67,11 @@ function setup() {
   };
 }
 
+// A loaded PC can take a second or more just to start node, so the time
+// limits below only check for a hang. 5000 ms still catches one: the stdin
+// fallback is 1000 ms, and the host kills a hook after 15 s.
+const HANG_LIMIT_MS = 5000;
+
 // A stdin pipe that is never written or closed, as when a Windows wrapper
 // swallows the hook input (#443).
 function runWithOpenStdin(script, env) {
@@ -79,7 +84,7 @@ function runWithOpenStdin(script, env) {
     const guard = setTimeout(() => {
       child.kill('SIGKILL');
       reject(new Error(`${script} hung on open stdin`));
-    }, 5000);
+    }, 2 * HANG_LIMIT_MS);
     child.on('close', (code) => {
       clearTimeout(guard);
       resolve({ code, stdout, elapsed: Date.now() - t0 });
@@ -190,13 +195,13 @@ test('the subagent hook injects nothing without a valid session id, and never ha
     const elapsed = Date.now() - t0;
     assert.equal(result.status, 0, `${label}: ${result.stderr}`);
     assert.equal(result.stdout, '', `${label} must inject nothing`);
-    assert.ok(elapsed < 1500, `${label} took ${elapsed} ms`);
+    assert.ok(elapsed < HANG_LIMIT_MS, `${label} took ${elapsed} ms`);
   }
 
   const open = await runWithOpenStdin('ponytail-subagent.js', s.env);
   assert.equal(open.code, 0, 'the 1000 ms fallback must exit 0');
   assert.equal(open.stdout, '', 'the 1000 ms fallback must inject nothing');
-  assert.ok(open.elapsed < 2500, `the fallback took ${open.elapsed} ms`);
+  assert.ok(open.elapsed < HANG_LIMIT_MS, `the fallback took ${open.elapsed} ms`);
 });
 
 test('off words in the typed text turn this chat off', (t) => {

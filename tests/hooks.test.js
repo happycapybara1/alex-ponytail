@@ -560,14 +560,35 @@ try {
   if (prevEnvModeRev === undefined) delete process.env.PONYTAIL_DEFAULT_MODE; else process.env.PONYTAIL_DEFAULT_MODE = prevEnvModeRev;
 }
 
+// A loaded PC can take a second or more just to start node, so the time
+// limits below only check for a hang. 5000ms still catches one: the stdin
+// fallback is 1000ms, and the host kills a hook after 15s.
+const HANG_LIMIT_MS = 5000;
+
 // Normal path stays fast: 'end' exits explicitly, so the (now ref'd) fallback
-// timer never adds its full 1000ms to a prompt that does reach EOF.
+// timer never adds its full 1000ms to a prompt that does reach EOF. On the
+// clock a slow node start looks like that delay, so a probe preloaded into
+// the hook reports whether a timer fired before the exit.
 {
+  const probe = path.join(temp, 'timer-probe.js');
+  fs.writeFileSync(probe, [
+    "const fs = require('fs');",
+    'const realSetTimeout = setTimeout;',
+    'global.setTimeout = (fn, ms, ...args) => realSetTimeout(() => {',
+    "  fs.writeSync(2, 'timer of ' + ms + 'ms fired\\n');",
+    '  fn(...args);',
+    '}, ms, ...args);',
+  ].join('\n'));
   const t0 = Date.now();
-  const r = run('ponytail-mode-tracker.js', codexEnv, JSON.stringify({ prompt: 'hi' }));
-  assert.equal(r.status, 0, r.stderr);
+  const r = spawnSync(process.execPath, ['--require', probe, path.join(root, 'hooks', 'ponytail-mode-tracker.js')], {
+    env: { ...process.env, ...isolated, ...codexEnv },
+    input: JSON.stringify({ prompt: 'hi' }),
+    encoding: 'utf8',
+  });
   const elapsed = Date.now() - t0;
-  assert.ok(elapsed < 800, `normal path took ${elapsed}ms; ref'd fallback timer is delaying EOF exits`);
+  assert.equal(r.status, 0, r.stderr);
+  assert.doesNotMatch(r.stderr, /timer of \d+ms fired/, "ref'd fallback timer is delaying EOF exits");
+  assert.ok(elapsed < HANG_LIMIT_MS, `normal path took ${elapsed}ms`);
 }
 
 // #790: when stdin never emits 'end' (the Windows PowerShell wrapper can
@@ -578,7 +599,7 @@ try {
 // fallback was dead code exactly where it was needed. The timer is now ref'd;
 // the normal 'end' path exits explicitly (checked above) so the ref'd timer
 // adds no latency. spawnSync's timeout acts as the watchdog: status null /
-// SIGTERM means the hook hung past 2500ms instead of exiting on its 1s
+// SIGTERM means the hook hung past HANG_LIMIT_MS instead of exiting on its 1s
 // fallback. The unref starvation itself is Windows-only (a POSIX pipe lets the
 // unref'd timer fire), so the ref'd-timer contract is also asserted
 // statically below.
@@ -589,7 +610,7 @@ try {
   for (const script of ['ponytail-mode-tracker.js', 'ponytail-subagent.js']) {
     const r = spawnSync(process.execPath, [path.join(root, 'hooks', script)], {
       env: { ...process.env, ...isolated, ...hangEnv },
-      timeout: 2500,
+      timeout: HANG_LIMIT_MS,
       encoding: 'utf8',
     });
     assert.notEqual(r.status, null, `${script} never exited on its fallback with open stdin (#790)`);
